@@ -123,10 +123,10 @@
 
 <script>
     $(document).ready(function () {
-        var initialSexSelection = $("#sexDropdown").val();
-        var initialNameSearch = $("#nameSearch").val();
-        var initialRatingSelection = $("#ratingDropdown").val();
-        var initialType = $("#typeDropdown").val();
+        let initialSexSelection = $("#sexDropdown").val();
+        let initialNameSearch = $("#nameSearch").val();
+        let initialRatingSelection = $("#ratingDropdown").val();
+        let initialType = $("#typeDropdown").val();
         loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
     });
 
@@ -144,7 +144,7 @@
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (data) {
-                var tableContent = '';
+                let tableContent = '';
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
                     $("#showAllButton").hide();
@@ -152,8 +152,8 @@
                     $("#dogData").html(tableContent);
                 } else {
                     $("#noResultsMessage").hide();
-                    for (var i = 0; i < data.length; i++) {
-                        var name = data[i].name.replace("/", "<br>");
+                    for (let i = 0; i < data.length; i++) {
+                        let name = data[i].name.replace("/", "<br>");
                         tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td>' + data[i].TotalScore + '</td></tr>';
                     }
                     $("#dogData").html(tableContent);
@@ -170,54 +170,39 @@
         });
     }
 
+    function updateData() {
+        let selectedType = $("#typeDropdown").val();
+        let selectedSex = $("#sexDropdown").val();
+        let nameSearch = $("#nameSearch").val();
+        let selectedRating = $("#ratingDropdown").val();
+        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+    }
+
     // Событие для текстового поля поиска
     $("#nameSearch").on('input', function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $("#sexDropdown").val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        updateData();
     });
 
     // Событие для выпадающего списка пола
     $("#sexDropdown").change(function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $(this).val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        updateData();
     });
 
     // Событие для выпадающего списка рейтинга
     $("#ratingDropdown").change(function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $("#sexDropdown").val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $(this).val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        updateData();
     });
 
     $("#typeDropdown").change(function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $("#sexDropdown").val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        updateData();
     });
 
     $("#showAllButton").click(function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $("#sexDropdown").val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating, true);
+        updateData();
     });
+
     $("#showLessButton").click(function () {
-        var selectedType = $("#typeDropdown").val();
-        var selectedSex = $("#sexDropdown").val();
-        var nameSearch = $("#nameSearch").val();
-        var selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        updateData();
     });
 
 </script>
