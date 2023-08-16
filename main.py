@@ -12,13 +12,15 @@ app.config['MYSQL_DB'] = 'dog_ratings'
 
 mysql = MySQL(app)
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/rating')
 def rating():
-    return render_template('rating2.html')
+    return render_template('rating.html')
 
 
 @app.route('/get-data', methods=['POST'])
@@ -26,22 +28,31 @@ def get_data():
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
     selected_rating = request.json['selectedRating']  # новый параметр
+    selected_type = request.json['selectedType']
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = "SELECT * FROM dogs"
+    base_query = """SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore 
+                                    FROM all_results 
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+                                    GROUP BY Type, Sex, Nickname
+                                    ) AS sub"""
     conditions = []
     params = []
+
+    if selected_type != "all":
+        conditions.append("Type=%s")
+        params.append(selected_type)
 
     if selected_sex != "all":
         conditions.append("Sex=%s")
         params.append(selected_sex)
     if name_search:
-        conditions.append("NicknameRU LIKE %s")
+        conditions.append("Nickname LIKE %s")
         params.append("%" + name_search + "%")
     if selected_rating != "all":
         rating_range = selected_rating.split('-')
-        conditions.append("score BETWEEN %s AND %s")
+        conditions.append("TotalScore BETWEEN %s AND %s")
         params.extend([rating_range[0], rating_range[1]])
 
     if conditions:
@@ -49,13 +60,13 @@ def get_data():
     else:
         query = base_query
 
-    query += " ORDER BY score DESC, NicknameRU ASC"
+    query += " ORDER BY TotalScore DESC, Nickname ASC"
     if not all_rows:
         query += " LIMIT 10"
-
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"id": row[0], "name": row[3], "sex": row[5], "rating": row[8]} for row in rows]  # добавлено row[6] для рейтинга, индекс может отличаться в зависимости от структуры вашей таблицы
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3]} for row in
+            rows]
 
     return jsonify(data)
 
