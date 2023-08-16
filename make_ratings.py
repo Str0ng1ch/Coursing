@@ -1,13 +1,10 @@
-import urllib.error
 from urllib.request import urlopen
 import mysql.connector
 import re
-import random
 try:
     from BeautifulSoup import BeautifulSoup
 except ImportError:
     from bs4 import BeautifulSoup
-from sys import argv
 
 config = {
   'user': 'root',
@@ -86,7 +83,8 @@ def insert_into_database(all_dogs):
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    insert_query = "INSERT INTO `dog_ratings`.all_results (Date, Position, Type, Sex, Nickname, Points, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    insert_query = "INSERT INTO `dog_ratings`.all_results (Date, Position, Type, Sex, " \
+                   "Nickname, Points, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
         if len(row) == 7:
             cursor.execute(insert_query, [date] + row)

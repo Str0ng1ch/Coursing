@@ -86,11 +86,12 @@
         </tr>
         </thead>
         <tbody id="dogData">
-        <!-- Таблица будет заполняться данными с помощью JavaScript -->
+            <!-- Таблица будет заполняться данными с помощью JavaScript -->
         </tbody>
     </table>
     <div id="noResultsMessage" class="text-center mt-3" style="display: none;">
-        Ничего не найдено.
+        Ничего не найдено. <br>
+        Попробуйте написать имя на другой языке или поставить другие параметры.
     </div>
 </div>
 
@@ -110,7 +111,6 @@
                 <h5>Контакты</h5>
                 <p class="email"><i class="fas fa-envelope"></i> t.kuzmi@gmail.com</p>
                 <p class="phone"><i class="fas fa-phone-alt"></i> +7(916)606-84-46</p>
-
             </div>
         </div>
     </div>
@@ -178,17 +178,14 @@
         loadData(selectedType, selectedSex, nameSearch, selectedRating);
     }
 
-    // Событие для текстового поля поиска
     $("#nameSearch").on('input', function () {
         updateData();
     });
 
-    // Событие для выпадающего списка пола
     $("#sexDropdown").change(function () {
         updateData();
     });
 
-    // Событие для выпадающего списка рейтинга
     $("#ratingDropdown").change(function () {
         updateData();
     });

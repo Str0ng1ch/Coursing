@@ -51,23 +51,25 @@
                 width: 75%;
             }
         }
-.container-full-height {
-      height: 80vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
 
-    /* Стиль для левой колонки */
-    .left-column {
-      padding: 20px;
-    }
+        .container-full-height {
+            height: 80vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    /* Стиль для изображения */
-    .image {
-      max-height: 80vh;
-      max-width: 100%;
-    }
+        /* Стиль для левой колонки */
+        .left-column {
+            padding: 20px;
+        }
+
+        /* Стиль для изображения */
+        .image {
+            max-height: 80vh;
+            max-width: 100%;
+        }
+
         /* Меняем порядок отображения для второго столбца */
 
     </style>
@@ -95,17 +97,15 @@
 </nav>
 
 <div class="container-full-height">
-  <div class="row">
-    <!-- Левая колонка с названием и описанием -->
-    <div class="col-md-6 left-column" style="text-align: center">
-      <h1>ПроКурсинг</h1>
-      <p>Мы представляем систему отслеживания <br> рейтинга собаки на соревнованиях по курсингу.</p>
+    <div class="row">
+        <div class="col-md-6 left-column" style="text-align: center">
+            <h1>ПроКурсинг</h1>
+            <p>Мы представляем систему отслеживания <br> рейтинга собаки на соревнованиях по курсингу.</p>
+        </div>
+        <div class="col-md-6">
+            <img src="../static/main.jpg" alt="Изображение" class="img-fluid image">
+        </div>
     </div>
-    <!-- Правая колонка с картинкой -->
-    <div class="col-md-6">
-      <img src="../static/main.jpg" alt="Изображение" class="img-fluid image">
-    </div>
-  </div>
 </div>
 
 
@@ -228,11 +228,11 @@
     </div>
 </footer>
 
-<!-- Bootstrap JS, Popper.js, and jQuery -->
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
 <script>
     document.querySelectorAll('.card-link').addEventListener('click', function (event) {
         event.preventDefault();

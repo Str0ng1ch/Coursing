@@ -1,6 +1,4 @@
-from flask import Flask, render_template
 import mysql.connector
-
 from flask import Flask, render_template, request, jsonify
 from flask_mysqldb import MySQL
 
@@ -27,7 +25,7 @@ def rating():
 def get_data():
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
-    selected_rating = request.json['selectedRating']  # новый параметр
+    selected_rating = request.json['selectedRating']
     selected_type = request.json['selectedType']
     all_rows = request.json.get('allRows', False)
 
@@ -43,7 +41,6 @@ def get_data():
     if selected_type != "all":
         conditions.append("Type=%s")
         params.append(selected_type)
-
     if selected_sex != "all":
         conditions.append("Sex=%s")
         params.append(selected_sex)
