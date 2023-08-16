@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flask App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 0;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="#">Dog Racing</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="/#">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="rating2.html">Rating</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>
+                <div class="d-flex align-items-center">
+                    Name
+                    <input type="text" class="form-control ml-2" id="nameSearch" placeholder="Поиск...">
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    Sex
+                    <select class="form-control ml-2" id="sexDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="Кобель">Кобель</option>
+                        <option value="Сука">Сука</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    Rating
+                    <select class="form-control ml-2" id="ratingDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="0-5">0-5</option>
+                        <option value="6-10">6-10</option>
+                    </select>
+                </div>
+            </th>
+        </tr>
+        </thead>
+        <tbody id="dogData">
+        <!-- Таблица будет заполняться данными с помощью JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<div class="text-center">
+    <button class="btn btn-primary mt-3" id="showAllButton">Показать все</button>
+    <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
+</div>
+
+<footer class="footer" id="footer">
+    <div class="container text-center">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>О нас</h5>
+                <p>Мы представляем систему отслеживания рейтинга собаки на соревнованиях по курсингу.</p>
+            </div>
+            <div class="col-md-6">
+                <h5>Контакты</h5>
+                <p class="email"><i class="fas fa-envelope"></i> t.kuzmi@gmail.com</p>
+                <p class="phone"><i class="fas fa-phone-alt"></i> +7(916)606-84-46</p>
+
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    $(document).ready(function () {
+        var initialSexSelection = $("#sexDropdown").val();
+        var initialNameSearch = $("#nameSearch").val();
+        var initialRatingSelection = $("#ratingDropdown").val();
+        loadData(initialSexSelection, initialNameSearch, initialRatingSelection, false);
+    });
+
+    function loadData(selectedSex, nameSearch, selectedRating, allRows = false) {
+        $.ajax({
+            url: "/get-data",
+            type: "POST",
+            data: JSON.stringify({
+                selectedSex: selectedSex,
+                nameSearch: nameSearch,
+                selectedRating: selectedRating,
+                allRows: allRows
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                var tableContent = '';
+                for (var i = 0; i < data.length - 1; i++) {  // Обратите внимание, что мы теперь итерируемся до предпоследнего элемента
+                    tableContent += '<tr><td>' + data[i].id + '</td><td>' + data[i].name + '</td><td>' + data[i].sex + '</td><td>' + data[i].rating + '</td></tr>';
+                }
+
+                $("#dogData").html(tableContent);
+
+                if (allRows) {
+                    $("#showAllButton").hide();
+                } else {
+                    $("#showAllButton").show();
+                }
+                if (!allRows) {
+                    $("#showLessButton").hide();
+                } else {
+                    $("#showLessButton").show();
+                }
+            }
+        });
+    }
+
+
+    // Событие для текстового поля поиска
+    $("#nameSearch").on('input', function () {
+        var selectedSex = $("#sexDropdown").val();
+        var nameSearch = $("#nameSearch").val();
+        var selectedRating = $("#ratingDropdown").val();
+        loadData(selectedSex, nameSearch, selectedRating);
+    });
+
+    // Событие для выпадающего списка пола
+    $("#sexDropdown").change(function () {
+        var selectedSex = $(this).val();
+        var nameSearch = $("#nameSearch").val();
+        var selectedRating = $("#ratingDropdown").val();
+        loadData(selectedSex, nameSearch, selectedRating);
+    });
+
+    // Событие для выпадающего списка рейтинга
+    $("#ratingDropdown").change(function () {
+        var selectedSex = $("#sexDropdown").val();
+        var nameSearch = $("#nameSearch").val();
+        var selectedRating = $(this).val();
+        loadData(selectedSex, nameSearch, selectedRating);
+    });
+
+
+    $("#showAllButton").click(function () {
+        var selectedSex = $("#sexDropdown").val();
+        var nameSearch = $("#nameSearch").val();
+        var selectedRating = $("#ratingDropdown").val();
+        loadData(selectedSex, nameSearch, selectedRating, true);
+    });
+    $("#showLessButton").click(function () {
+        var selectedSex = $("#sexDropdown").val();
+        var nameSearch = $("#nameSearch").val();
+        var selectedRating = $("#ratingDropdown").val();
+        loadData(selectedSex, nameSearch, selectedRating);
+    });
+
+</script>
+</body>
+</html>

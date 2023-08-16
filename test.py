@@ -1,10 +1,9 @@
-from flask import Flask, render_template
-import mysql.connector
-
 from flask import Flask, render_template, request, jsonify
 from flask_mysqldb import MySQL
 
 app = Flask(__name__)
+
+# Конфигурация MySQL
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'My$QLP@ssw0rd'
@@ -12,12 +11,9 @@ app.config['MYSQL_DB'] = 'dog_ratings'
 
 mysql = MySQL(app)
 
+
 @app.route('/')
 def index():
-    return render_template('index.html')
-
-@app.route('/rating')
-def rating():
     return render_template('rating2.html')
 
 
@@ -60,5 +56,5 @@ def get_data():
     return jsonify(data)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
