@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flask App</title>
+    <title>ProCoursing</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="icon" href="../static/pawn_gray.ico">
 
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -50,7 +51,6 @@
                         <option value="Стандартный">Стандартный</option>
                         <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
                         <option value="Юниоры">Юниоры</option>
-                        <!-- добавьте другие классы по мере необходимости -->
                     </select>
                 </div>
             </th>
@@ -86,17 +86,17 @@
         </tr>
         </thead>
         <tbody id="dogData">
-            <!-- Таблица будет заполняться данными с помощью JavaScript -->
+        <!-- Таблица будет заполняться данными с помощью JavaScript -->
         </tbody>
     </table>
     <div id="noResultsMessage" class="text-center mt-3" style="display: none;">
         Ничего не найдено. <br>
-        Попробуйте написать имя на другой языке или поставить другие параметры.
+        Попробуйте написать имя на другом языке или поставить другие параметры.
     </div>
 </div>
 
 <div class="text-center">
-    <button class="btn btn-primary mt-3" id="showAllButton">Показать все</button>
+    <button class="btn btn-primary mt-3" id="showAllButton">Показать больше</button>
     <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
 </div>
 
@@ -135,7 +135,7 @@
             url: "/get-data",
             type: "POST",
             data: JSON.stringify({
-                selectedType: selectedType,  // новый параметр
+                selectedType: selectedType,
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
                 selectedRating: selectedRating,
@@ -156,50 +156,58 @@
                         let name = data[i].name.replace("/", "<br>");
                         tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td>' + data[i].TotalScore + '</td></tr>';
                     }
-                    $("#dogData").html(tableContent);
 
                     if (allRows) {
                         $("#showAllButton").hide();
                         $("#showLessButton").show();
                     } else {
+                        if (data.length === 9) {
+                            tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                        }
                         $("#showAllButton").show();
                         $("#showLessButton").hide();
                     }
+
+                    if (data.length < 9) {
+                        $("#showAllButton").hide();
+                    }
+
+                    $("#dogData").html(tableContent);
                 }
             }
         });
     }
 
-    function updateData() {
+    function updateData(allRows) {
         let selectedType = $("#typeDropdown").val();
         let selectedSex = $("#sexDropdown").val();
         let nameSearch = $("#nameSearch").val();
         let selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating);
+        loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
     }
 
     $("#nameSearch").on('input', function () {
-        updateData();
+        updateData(false);
     });
 
     $("#sexDropdown").change(function () {
-        updateData();
+        updateData(false);
     });
 
     $("#ratingDropdown").change(function () {
-        updateData();
+        updateData(false);
     });
 
     $("#typeDropdown").change(function () {
-        updateData();
+        updateData(false);
     });
 
     $("#showAllButton").click(function () {
-        updateData();
+        updateData(true);
     });
 
     $("#showLessButton").click(function () {
-        updateData();
+        updateData(false);
     });
 
 </script>

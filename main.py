@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'My$QLP@ssw0rd'
-app.config['MYSQL_DB'] = 'dog_ratings'
+app.config['MYSQL_DB'] = 'coursing'
 
 mysql = MySQL(app)
 
@@ -31,7 +31,7 @@ def get_data():
 
     cur = mysql.connection.cursor()
     base_query = """SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore 
-                                    FROM all_results 
+                                    FROM results 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
                                     GROUP BY Type, Sex, Nickname
                                     ) AS sub"""
@@ -59,7 +59,7 @@ def get_data():
 
     query += " ORDER BY TotalScore DESC, Nickname ASC"
     if not all_rows:
-        query += " LIMIT 10"
+        query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
     data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3]} for row in

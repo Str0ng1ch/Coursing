@@ -10,7 +10,7 @@ config = {
   'user': 'root',
   'password': 'My$QLP@ssw0rd',
   'host': 'localhost',
-  'database': 'dog_ratings',
+  'database': 'coursing',
 }
 
 # path, url = argv
@@ -83,7 +83,7 @@ def insert_into_database(all_dogs):
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    insert_query = "INSERT INTO `dog_ratings`.all_results (Date, Position, Type, Sex, " \
+    insert_query = "INSERT INTO `coursing`.results (Date, Position, Type, Sex, " \
                    "Nickname, Points, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
         if len(row) == 7:
