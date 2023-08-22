@@ -5,15 +5,19 @@ try:
     from BeautifulSoup import BeautifulSoup
 except ImportError:
     from bs4 import BeautifulSoup
+import configparser
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
+
+DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
 config = {
-  'user': 'root',
-  'password': 'My$QLP@ssw0rd',
-  'host': 'localhost',
-  'database': 'coursing',
+  'user': config['DATABASE']['USER'],
+  'password': config['DATABASE']['PASSWORD'],
+  'host': config['DATABASE']['HOST'],
+  'database': DATABASE,
 }
 
-# path, url = argv
 url = "http://procoursing.ru/Complete_Results_2023-07-01.html"
 page = urlopen(url)
 soup = BeautifulSoup(page, features="html.parser")
@@ -83,7 +87,7 @@ def insert_into_database(all_dogs):
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    insert_query = "INSERT INTO `coursing`.results (Date, Position, Type, Sex, " \
+    insert_query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, " \
                    "Nickname, Points, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
         if len(row) == 7:

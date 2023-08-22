@@ -1,12 +1,17 @@
 import mysql.connector
 from flask import Flask, render_template, request, jsonify
 from flask_mysqldb import MySQL
+import configparser
 
+config = configparser.ConfigParser()
+config.read('settings.ini')
+
+DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
 app = Flask(__name__)
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'My$QLP@ssw0rd'
-app.config['MYSQL_DB'] = 'coursing'
+app.config['MYSQL_HOST'] = config['DATABASE']['HOST']
+app.config['MYSQL_USER'] = config['DATABASE']['USER']
+app.config['MYSQL_PASSWORD'] = config['DATABASE']['PASSWORD']
+app.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(app)
 
@@ -30,8 +35,8 @@ def get_data():
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = """SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore 
-                                    FROM results 
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore 
+                                    FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
                                     GROUP BY Type, Sex, Nickname
                                     ) AS sub"""
