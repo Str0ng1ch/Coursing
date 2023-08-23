@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Data</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-4">
+    {% if message %}
+        <div id="message" class="alert mt-3 {{ 'alert-success' if 'успешно' in message else 'alert-danger' }}">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-6">
+            <h1>Внести данные</h1>
+            <form action="/add-data" method="POST">
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="date">Дата:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="date" class="form-control" id="date" name="date" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="position">Место:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="position" name="position" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="type">Класс:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <select class="form-control" id="type" name="type" required>
+                                <option value="Стандартный">Стандартный</option>
+                                <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
+                                <option value="Юниоры">Юниоры</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="sex">Пол:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <select class="form-control" id="sex" name="sex" required>
+                                <option value="Кобель">Кобель</option>
+                                <option value="Сука">Сука</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="nickname">Кличка:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="nickname" name="nickname" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="points">Очки:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="number" class="form-control" id="points" name="points" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="max_position">Всего мест:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="max_position" name="max_position" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="score">Очки:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="score" name="score" readonly>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить</button>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h1>Загрузить Excel файл</h1>
+            <form action="/add-data" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" class="form-control-file" id="excel_file" name="excel_file" accept=".xls, .xlsx"
+                           required>
+                </div>
+                <button type="submit" class="btn btn-success">Загрузить</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let messageElement = document.getElementById("message");
+        if (messageElement) {
+            setTimeout(function () {
+                messageElement.style.display = "none";
+            }, 5000); // Скрыть через 5 секунд (5000 миллисекунд)
+        }
+    });
+
+    function calculateScore() {
+        let maxPosition = parseInt(document.getElementById("max_position").value);
+        let position = parseInt(document.getElementById("position").value);
+        let score = maxPosition - position + 1;
+        if (!isNaN(score)) {
+            document.getElementById("score").value = score;
+        }
+    }
+
+    document.getElementById("max_position").addEventListener("input", calculateScore);
+    document.getElementById("position").addEventListener("input", calculateScore);
+</script>
+</body>
+</html>

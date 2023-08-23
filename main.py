@@ -1,7 +1,8 @@
 import mysql.connector
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_mysqldb import MySQL
 import configparser
+import pandas as pd
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -14,7 +15,7 @@ app.config['MYSQL_PASSWORD'] = config['DATABASE']['PASSWORD']
 app.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(app)
-
+app.secret_key = 'your_secret_key'
 
 @app.route('/')
 def index():
@@ -71,6 +72,62 @@ def get_data():
             rows]
 
     return jsonify(data)
+
+
+@app.route('/add-data', methods=['GET', 'POST'])
+def add_data():
+    message = session.pop('message', None)
+    if request.method == 'POST':
+        if 'excel_file' in request.files:
+            file = request.files['excel_file']
+            cursor = mysql.connection.cursor()
+
+            try:
+                df = pd.read_excel(file)
+
+                values_list = df.apply(lambda row: (
+                    row['Date'], row['Position'], row['Type'], row['Sex'], row['Nickname'],
+                    row['Points'], row['Max_position'], row['Score']
+                ), axis=1).tolist()
+
+                query = "INSERT INTO coursing.results (Date, Position, Type, Sex, Nickname, Points, max_position, Score) " \
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+
+                cursor.executemany(query, values_list)
+                mysql.connection.commit()
+                message = "Данные успешно внесены из Excel файла!"
+            except Exception:
+                mysql.connection.rollback()
+                message = "Ошибка при занесении данных из Excel файла!"
+            finally:
+                cursor.close()
+
+        else:
+            date = request.form['date']
+            position = request.form['position']
+            type = request.form['type']
+            sex = request.form['sex']
+            nickname = request.form['nickname']
+            points = request.form['points']
+            max_position = request.form['max_position']
+            score = request.form['score']
+
+            cur = mysql.connection.cursor()
+            try:
+                cur.execute(
+                    "INSERT INTO results (Date, Position, Type, Sex, Nickname, Points, max_position, Score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (date, position, type, sex, nickname, points, max_position, score))
+                mysql.connection.commit()
+                message = "Данные успешно внесены из формы!"
+            except Exception:
+                mysql.connection.rollback()
+                message = "Ошибка при занесении данных из формы!"
+            finally:
+                cur.close()
+        session['message'] = message
+        return redirect(url_for('add_data'))
+
+    return render_template('add_data.html', message=message)
 
 
 if __name__ == '__main__':
