@@ -8,11 +8,13 @@ import io
 from openpyxl import Workbook
 from functools import wraps
 
-
 config = configparser.ConfigParser()
 config.read('settings.ini')
 
 DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
+ADMIN_USERNAME, ADMIN_PASSWORD = config['SECURITY']['ADMIN_USERNAME'], config['SECURITY']['ADMIN_PASSWORD']
+SECRET_KEY = config['SECURITY']['SECRET_KEY']
+
 app = Flask(__name__)
 app.config['MYSQL_HOST'] = config['DATABASE']['HOST']
 app.config['MYSQL_USER'] = config['DATABASE']['USER']
@@ -20,7 +22,7 @@ app.config['MYSQL_PASSWORD'] = config['DATABASE']['PASSWORD']
 app.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(app)
-app.secret_key = 'your_secret_key'
+app.secret_key = SECRET_KEY
 
 
 @app.route('/')
@@ -33,13 +35,19 @@ def rating():
     return render_template('rating.html')
 
 
-@app.route('/get-database-data')
-def get_database_data():
+@app.route('/get-score-details', methods=['POST'])
+def get_score_details():
+    data = request.json
+    name = data['score'].replace('<br>', '/')
+
     cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM results")
-    data = cursor.fetchall()
-    columns = [desc[0] for desc in cursor.description]
-    return jsonify({"data": data, "columns": columns})
+    query = f"SELECT date, position, max_position, score FROM results WHERE Nickname = '{name}'"
+    cursor.execute(query)
+    score_details = cursor.fetchall()
+
+    cursor.close()
+
+    return jsonify(score_details)
 
 
 @app.route('/get-data', methods=['POST'])
@@ -93,10 +101,8 @@ def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        username = 'your_username'
-        password = 'your_password'
 
-        if auth and auth.username == username and auth.password == password:
+        if auth and auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD:
             return f(*args, **kwargs)
 
         return Response(
@@ -211,7 +217,7 @@ def download_excel(cursor, full=True):
 
 
 @app.route('/add-data', methods=['GET', 'POST'])
-# @requires_auth
+@requires_auth
 def add_data():
     message = session.pop('message', None)
     if request.method == 'POST':
