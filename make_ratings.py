@@ -6,6 +6,7 @@ try:
 except ImportError:
     from bs4 import BeautifulSoup
 import configparser
+from sys import argv
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -18,7 +19,7 @@ config = {
   'database': DATABASE,
 }
 
-url = "http://procoursing.ru/Complete_Results_2023-07-01.html"
+path, url = argv
 page = urlopen(url)
 soup = BeautifulSoup(page, features="html.parser")
 
@@ -35,7 +36,7 @@ def parse_data():
             dog = []
             try:
                 for j, col in enumerate(all_cols):
-                    if j == 0 or j == 20:
+                    if j == 0:
                         dog.append(int(col.get_text()))
                     if j == 3 or j == 4:
                         dog.append(col.get_text())
@@ -88,9 +89,9 @@ def insert_into_database(all_dogs):
     cursor = connection.cursor()
 
     insert_query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, " \
-                   "Nickname, Points, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                   "Nickname, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
-        if len(row) == 7:
+        if len(row) == 6:
             cursor.execute(insert_query, [date] + row)
 
     connection.commit()
@@ -101,8 +102,6 @@ def insert_into_database(all_dogs):
 def main():
     all_dogs = parse_data()
     all_dogs = insert_all_max_positions(all_dogs)
-    for dog in all_dogs:
-        print(dog)
     insert_into_database(all_dogs)
 
 

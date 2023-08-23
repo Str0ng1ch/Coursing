@@ -1,8 +1,13 @@
 import mysql.connector
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, session
 from flask_mysqldb import MySQL
 import configparser
 import pandas as pd
+import subprocess
+import io
+from openpyxl import Workbook
+from functools import wraps
+
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -16,6 +21,7 @@ app.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(app)
 app.secret_key = 'your_secret_key'
+
 
 @app.route('/')
 def index():
@@ -74,58 +80,168 @@ def get_data():
     return jsonify(data)
 
 
+def delete_from_table():
+    message = None
+    cursor = mysql.connection.cursor()
+    try:
+        cursor.execute("DROP TABLE IF EXISTS copy_results; CREATE TABLE copy_results AS SELECT * FROM results;")
+        cursor.execute("DELETE FROM results")
+        mysql.connection.commit()
+        message = "Все данные успешно удалены!"
+    except Exception:
+        mysql.connection.rollback()
+        message = "Ошибка при удалении данных!"
+    finally:
+        cursor.close()
+        return message
+
+
+def add_data_from_excel():
+    file = request.files['excel_file']
+    cursor = mysql.connection.cursor()
+    message = None
+
+    try:
+        df = pd.read_excel(file)
+
+        values_list = df.apply(lambda row: (
+            row['Date'], row['Position'], row['Type'], row['Sex'],
+            row['Nickname'], row['Max_position'], row['Score']
+        ), axis=1).tolist()
+
+        query = "INSERT INTO coursing.results (Date, Position, Type, Sex, Nickname, max_position, Score) " \
+                "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+
+        cursor.executemany(query, values_list)
+        mysql.connection.commit()
+        message = "Данные успешно внесены из Excel файла!"
+    except Exception:
+        mysql.connection.rollback()
+        message = "Ошибка при занесении данных из Excel файла!"
+    finally:
+        cursor.close()
+        return message
+
+
+def run_script():
+    link = request.form.get('link', '')
+    message = None
+
+    try:
+        subprocess.run(['python', 'make_ratings.py', link], check=True)
+        message = f"Данные успешно внесены из {link}"
+    except subprocess.CalledProcessError:
+        message = f"Ошибка при занесении данных из {link}"
+    finally:
+        return message
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        username = 'your_username'
+        password = 'your_password'
+
+        if auth and auth.username == username and auth.password == password:
+            return f(*args, **kwargs)
+
+        return Response(
+            'Could not verify your access level for that URL.\n'
+            'You have to login with proper credentials.', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+    return decorated
+
+
+def add_data_from_form():
+    message = None
+    date = request.form['date']
+    position = request.form['position']
+    type = request.form['type']
+    sex = request.form['sex']
+    nickname = request.form['nickname']
+    max_position = request.form['max_position']
+    score = request.form['score']
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO results (Date, Position, Type, Sex, Nickname, max_position, Score) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (date, position, type, sex, nickname, max_position, score))
+        mysql.connection.commit()
+        message = "Данные успешно внесены из формы!"
+    except Exception:
+        mysql.connection.rollback()
+        message = "Ошибка при занесении данных из формы!"
+    finally:
+        cur.close()
+        return message
+
+
+def download_excel(cursor, full=True):
+    query = "SELECT * FROM results"
+    cursor.execute(query)
+    result = cursor.fetchall()
+
+    column_names = [column[0] for column in cursor.description]
+
+    wb = Workbook()
+    ws = wb.active
+
+    ws.append(column_names)
+    if full:
+        for row in result:
+            ws.append(row)
+
+    excel_data = io.BytesIO()
+    wb.save(excel_data)
+    excel_data.seek(0)
+
+    return excel_data
+
+
 @app.route('/add-data', methods=['GET', 'POST'])
+# @requires_auth
 def add_data():
     message = session.pop('message', None)
     if request.method == 'POST':
-        if 'excel_file' in request.files:
-            file = request.files['excel_file']
-            cursor = mysql.connection.cursor()
-
-            try:
-                df = pd.read_excel(file)
-
-                values_list = df.apply(lambda row: (
-                    row['Date'], row['Position'], row['Type'], row['Sex'], row['Nickname'],
-                    row['Points'], row['Max_position'], row['Score']
-                ), axis=1).tolist()
-
-                query = "INSERT INTO coursing.results (Date, Position, Type, Sex, Nickname, Points, max_position, Score) " \
-                        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-
-                cursor.executemany(query, values_list)
-                mysql.connection.commit()
-                message = "Данные успешно внесены из Excel файла!"
-            except Exception:
-                mysql.connection.rollback()
-                message = "Ошибка при занесении данных из Excel файла!"
-            finally:
-                cursor.close()
-
+        if 'delete_button' in request.form:
+            message = delete_from_table()
+        elif 'excel_file' in request.files:
+            message = add_data_from_excel()
+        elif 'run_script' in request.form:
+            message = run_script()
         else:
-            date = request.form['date']
-            position = request.form['position']
-            type = request.form['type']
-            sex = request.form['sex']
-            nickname = request.form['nickname']
-            points = request.form['points']
-            max_position = request.form['max_position']
-            score = request.form['score']
-
-            cur = mysql.connection.cursor()
-            try:
-                cur.execute(
-                    "INSERT INTO results (Date, Position, Type, Sex, Nickname, Points, max_position, Score) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                    (date, position, type, sex, nickname, points, max_position, score))
-                mysql.connection.commit()
-                message = "Данные успешно внесены из формы!"
-            except Exception:
-                mysql.connection.rollback()
-                message = "Ошибка при занесении данных из формы!"
-            finally:
-                cur.close()
+            message = add_data_from_form()
         session['message'] = message
         return redirect(url_for('add_data'))
+    if 'download_full_excel' in request.args:
+        cursor = mysql.connection.cursor()
+        try:
+            excel_data = download_excel(cursor, full=True)
+            return Response(
+                excel_data.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment;filename=database.xlsx"}
+            )
+        except Exception:
+            message = "Ошибка при скачивании Excel файла!"
+        finally:
+            cursor.close()
+    elif 'download_part_excel' in request.args:
+        cursor = mysql.connection.cursor()
+        try:
+            excel_data = download_excel(cursor, full=False)
+            return Response(
+                excel_data.read(),
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                headers={"Content-Disposition": "attachment;filename=template.xlsx"}
+            )
+        except Exception:
+            message = "Ошибка при скачивании Excel файла!"
+        finally:
+            cursor.close()
 
     return render_template('add_data.html', message=message)
 

@@ -13,7 +13,7 @@
     {% endif %}
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-6 mb-5">
             <h1>Внести данные</h1>
             <form action="/add-data" method="POST">
                 <div class="form-row">
@@ -79,17 +79,6 @@
 
                 <div class="form-row">
                     <div class="col-md-3">
-                        <label for="points">Очки:</label>
-                    </div>
-                    <div class="col-md-9">
-                        <div class="form-group">
-                            <input type="number" class="form-control" id="points" name="points" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="col-md-3">
                         <label for="max_position">Всего мест:</label>
                     </div>
                     <div class="col-md-9">
@@ -109,22 +98,79 @@
                         </div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Добавить</button>
+                <button type="submit" class="btn btn-success">Добавить</button>
             </form>
         </div>
-        <div class="col-md-6">
+
+        <br>
+
+        <div class="col-md-6 mt-mb-4">
+            <h1>Скачать Excel файл</h1>
+            <form action="/add-data" method="post" class="mb-3">
+                <a href="{{ url_for('add_data', download_full_excel='true') }}" class="btn btn-success">Скачать
+                    Excel</a>
+                <a href="{{ url_for('add_data', download_part_excel='true') }}" class="btn btn-success">Скачать шаблон
+                    Excel</a>
+            </form>
+
+            <br>
+
             <h1>Загрузить Excel файл</h1>
             <form action="/add-data" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <input type="file" class="form-control-file" id="excel_file" name="excel_file" accept=".xls, .xlsx"
                            required>
                 </div>
-                <button type="submit" class="btn btn-success">Загрузить</button>
+                <button type="submit" class="btn btn-success">Загрузить Excel файл</button>
+            </form>
+
+            <br>
+            <br>
+
+            <h1>Загрузить с ProCoursing</h1>
+            <form action="/add-data" method="post" class="mb-3">
+                <div class="input-group">
+                    <label for="link" class="input-group-text">Ссылка:</label>
+                    <input type="text" name="link" id="link" class="form-control">
+                </div>
+                <button type="submit" name="run_script" class="btn btn-success mt-3">Загрузить с ProCoursing</button>
             </form>
         </div>
     </div>
+    <div class="row" style="text-align: center">
+        <div class="col"></div>
+        <div class="col-8">
+            <h1>Очистить базу данных</h1>
+            <button type="button" class="btn btn-danger mt-3" data-toggle="modal" data-target="#confirmModal" style="align-self: center">
+                Очистить базу данных
+            </button>
+        </div>
+        <div class="col"></div>
+    </div>
 </div>
 
+<div class="modal fade" id="confirmModal" tabindex="-1" role="dialog" aria-labelledby="confirmModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Подтвердите удаление</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Закрыть">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Вы уверены, что хотите очистить базу данных?
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                <form action="/add-data" method="post" class="mb-4">
+                    <button type="submit" name="delete_button" class="btn btn-danger mt-3">Очистить базу данных</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
