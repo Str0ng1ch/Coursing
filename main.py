@@ -33,6 +33,15 @@ def rating():
     return render_template('rating.html')
 
 
+@app.route('/get-database-data')
+def get_database_data():
+    cursor = mysql.connection.cursor()
+    cursor.execute("SELECT * FROM results")
+    data = cursor.fetchall()
+    columns = [desc[0] for desc in cursor.description]
+    return jsonify({"data": data, "columns": columns})
+
+
 @app.route('/get-data', methods=['POST'])
 def get_data():
     selected_sex = request.json['selectedSex']
@@ -78,6 +87,24 @@ def get_data():
             rows]
 
     return jsonify(data)
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        username = 'your_username'
+        password = 'your_password'
+
+        if auth and auth.username == username and auth.password == password:
+            return f(*args, **kwargs)
+
+        return Response(
+            'Could not verify your access level for that URL.\n'
+            'You have to login with proper credentials.', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+    return decorated
 
 
 def delete_from_table():
@@ -134,24 +161,6 @@ def run_script():
         message = f"Ошибка при занесении данных из {link}"
     finally:
         return message
-
-
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-        username = 'your_username'
-        password = 'your_password'
-
-        if auth and auth.username == username and auth.password == password:
-            return f(*args, **kwargs)
-
-        return Response(
-            'Could not verify your access level for that URL.\n'
-            'You have to login with proper credentials.', 401,
-            {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-    return decorated
 
 
 def add_data_from_form():

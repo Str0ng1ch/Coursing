@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
     <title>ProCoursing</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
@@ -100,6 +100,22 @@
     <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
 </div>
 
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Информация о баллах</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Здесь будет отображаться информация о баллах -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <footer class="footer" id="footer">
     <div class="container text-center">
         <div class="row">
@@ -123,6 +139,11 @@
 
 <script>
     $(document).ready(function () {
+        $(document).on('click', '.score-info', function () {
+            let score = $(this).data('score');
+            $('#infoModal .modal-body').html('Баллы: ' + score);
+        });
+
         let initialSexSelection = $("#sexDropdown").val();
         let initialNameSearch = $("#nameSearch").val();
         let initialRatingSelection = $("#ratingDropdown").val();
@@ -154,7 +175,7 @@
                     $("#noResultsMessage").hide();
                     for (let i = 0; i < data.length; i++) {
                         let name = data[i].name.replace("/", "<br>");
-                        tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td>' + data[i].TotalScore + '</td></tr>';
+                        tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + data[i].TotalScore + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
                     }
 
                     if (allRows) {
