@@ -35,7 +35,6 @@ def rating():
     return render_template('rating.html')
 
 
-
 def handle_bad_request(error):
     return render_template('errors/error400.html'), 400
 
@@ -75,10 +74,11 @@ def handle_gateway_timeout(error):
 @app.route('/get-score-details', methods=['POST'])
 def get_score_details():
     data = request.json
-    name = data['score'].replace('<br>', '/')
+    name, dog_type = data['score'].split(', ')
+    name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f"SELECT date, position, max_position, score FROM results WHERE Nickname = '{name}'"
+    query = f"SELECT date, position, max_position, score FROM results WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
     cursor.execute(query)
     score_details = cursor.fetchall()
 
@@ -200,7 +200,7 @@ def run_script():
     try:
         subprocess.run(['python', 'src/make_ratings.py', link], check=True)
         message = f"Данные успешно внесены из {link}"
-    except subprocess.CalledProcessError:
+    except Exception:
         message = f"Ошибка при занесении данных из {link}"
     finally:
         return message
@@ -299,16 +299,20 @@ def add_data():
     return render_template('add_data.html', message=message)
 
 
-app.register_error_handler(400, handle_bad_request)
-app.register_error_handler(401, handle_unauthorized)
-app.register_error_handler(403, handle_forbidden)
-app.register_error_handler(404, handle_not_found)
-app.register_error_handler(405, handle_not_allowed)
-app.register_error_handler(429, handle_too_many_request)
-app.register_error_handler(500, handle_internal_server)
-app.register_error_handler(503, handle_service_unavailable)
-app.register_error_handler(504, handle_gateway_timeout)
+error_handlers = {
+    400: handle_bad_request,
+    401: handle_unauthorized,
+    403: handle_forbidden,
+    404: handle_not_found,
+    405: handle_not_allowed,
+    429: handle_too_many_request,
+    500: handle_internal_server,
+    503: handle_service_unavailable,
+    504: handle_gateway_timeout
+}
 
+for error_code, handler in error_handlers.items():
+    app.register_error_handler(error_code, handler)
 
 if __name__ == '__main__':
     app.run(debug=True)

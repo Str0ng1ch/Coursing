@@ -75,11 +75,11 @@
                     Баллы
                     <select class="form-control ml-2" id="ratingDropdown">
                         <option value="all" selected>Все</option>
-                        <option value="0-9">0-9</option>
-                        <option value="10-19">10-19</option>
-                        <option value="20-29">20-29</option>
-                        <option value="30-39">30-39</option>
-                        <option value="40-49">40-49</option>
+                        {#                        <option value="0-9">0-9</option>#}
+                        {#                        <option value="10-19">10-19</option>#}
+                        {#                        <option value="20-29">20-29</option>#}
+                        {#                        <option value="30-39">30-39</option>#}
+                        {#                        <option value="40-49">40-49</option>#}
                     </select>
                 </div>
             </th>
@@ -124,13 +124,14 @@
                     </tbody>
                 </table>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-center">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
             </div>
         </div>
     </div>
 </div>
 
+<div id="maxScoreHolder" style="display: none;">0</div>
 
 <footer class="footer" id="footer">
     <div class="container text-center">
@@ -153,7 +154,18 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 
 <script>
+    var count = 0;
 
+    function updateDropdown(maxScore) {
+        let dropdownOptions = '';
+        const step = 10;
+        dropdownOptions += '<option value="all" selected>Все</option>'
+        for (let i = 0; i <= maxScore; i += step) {
+            dropdownOptions += '<option value="' + i + '-' + (i + step - 1) + '">' + i + '-' + (i + step - 1) + '</option>';
+        }
+
+        $("#ratingDropdown").html(dropdownOptions);
+    }
 
     $(document).ready(function () {
         let initialSexSelection = $("#sexDropdown").val();
@@ -178,6 +190,7 @@
             dataType: "json",
             success: function (data) {
                 let tableContent = '';
+                let maxScore = 0;
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
                     $("#showAllButton").hide();
@@ -186,8 +199,18 @@
                 } else {
                     $("#noResultsMessage").hide();
                     for (let i = 0; i < data.length; i++) {
+                        let currentScore = parseInt(data[i].TotalScore);
+                        if (currentScore > maxScore) {
+                            maxScore = currentScore;
+                        }
+
                         let name = data[i].name.replace("/", "<br>");
-                        tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
+                        tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
+                    }
+                    console.log(maxScore)
+                    if (maxScore > $("#maxScoreHolder").text()) {
+                        updateDropdown(maxScore);
+                        $("#maxScoreHolder").text(maxScore);
                     }
 
                     if (allRows) {
