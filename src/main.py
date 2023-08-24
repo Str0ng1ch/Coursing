@@ -35,6 +35,43 @@ def rating():
     return render_template('rating.html')
 
 
+
+def handle_bad_request(error):
+    return render_template('errors/error400.html'), 400
+
+
+def handle_unauthorized(error):
+    return render_template('errors/error401.html'), 401
+
+
+def handle_forbidden(error):
+    return render_template('errors/error403.html'), 403
+
+
+def handle_not_found(error):
+    return render_template('errors/error404.html'), 404
+
+
+def handle_not_allowed(error):
+    return render_template('errors/error405.html'), 405
+
+
+def handle_too_many_request(error):
+    return render_template('errors/error429.html'), 429
+
+
+def handle_internal_server(error):
+    return render_template('errors/error500.html'), 500
+
+
+def handle_service_unavailable(error):
+    return render_template('errors/error503.html'), 503
+
+
+def handle_gateway_timeout(error):
+    return render_template('errors/error504.html'), 504
+
+
 @app.route('/get-score-details', methods=['POST'])
 def get_score_details():
     data = request.json
@@ -118,7 +155,8 @@ def delete_from_table():
     cursor = mysql.connection.cursor()
     try:
         cursor.execute("DROP TABLE IF EXISTS copy_results; CREATE TABLE copy_results AS SELECT * FROM results;")
-        cursor.execute("DELETE FROM results")
+        cursor.execute("DELETE FROM results;")
+        cursor.execute("ALTER TABLE results AUTO_INCREMENT = 1;")
         mysql.connection.commit()
         message = "Все данные успешно удалены!"
     except Exception:
@@ -159,9 +197,8 @@ def add_data_from_excel():
 def run_script():
     link = request.form.get('link', '')
     message = None
-
     try:
-        subprocess.run(['python', 'make_ratings.py', link], check=True)
+        subprocess.run(['python', 'src/make_ratings.py', link], check=True)
         message = f"Данные успешно внесены из {link}"
     except subprocess.CalledProcessError:
         message = f"Ошибка при занесении данных из {link}"
@@ -173,7 +210,7 @@ def add_data_from_form():
     message = None
     date = request.form['date']
     position = request.form['position']
-    type = request.form['type']
+    dog_type = request.form['type']
     sex = request.form['sex']
     nickname = request.form['nickname']
     max_position = request.form['max_position']
@@ -182,8 +219,9 @@ def add_data_from_form():
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO results (Date, Position, Type, Sex, Nickname, max_position, Score) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (date, position, type, sex, nickname, max_position, score))
+            "INSERT INTO results (Date, Position, Type, Sex, Nickname, max_position, Score) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (date, position, dog_type, sex, nickname, max_position, score))
         mysql.connection.commit()
         message = "Данные успешно внесены из формы!"
     except Exception:
@@ -259,6 +297,17 @@ def add_data():
             cursor.close()
 
     return render_template('add_data.html', message=message)
+
+
+app.register_error_handler(400, handle_bad_request)
+app.register_error_handler(401, handle_unauthorized)
+app.register_error_handler(403, handle_forbidden)
+app.register_error_handler(404, handle_not_found)
+app.register_error_handler(405, handle_not_allowed)
+app.register_error_handler(429, handle_too_many_request)
+app.register_error_handler(500, handle_internal_server)
+app.register_error_handler(503, handle_service_unavailable)
+app.register_error_handler(504, handle_gateway_timeout)
 
 
 if __name__ == '__main__':

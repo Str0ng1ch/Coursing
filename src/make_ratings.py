@@ -35,25 +35,22 @@ def parse_data():
             all_cols = row.find_all('td')
             dog = []
             try:
-                for j, col in enumerate(all_cols):
-                    if j == 0:
-                        dog.append(int(col.get_text()))
-                    if j == 3 or j == 4:
-                        dog.append(col.get_text())
-                    if j == 5:
-                        names = col.get_text().split('/')
-                        if len(names) == 1:
-                            if ord(names[0].strip()[0]) < 200:
-                                dog.append(names[0].strip() + "/")
-                            else:
-                                dog.append("/" + names[0].strip())
+                if all_cols[2].get_text() == 'Уиппет':
+                    dog.append(int(all_cols[0].get_text()))
+                    dog.append(all_cols[3].get_text())
+                    dog.append(all_cols[4].get_text())
+                    names = all_cols[5].get_text().split('/')
+                    if len(names) == 1:
+                        if ord(names[0].strip()[0]) < 200:
+                            dog.append(names[0].strip() + "/")
                         else:
-                            if ord(names[0].strip()[0]) < 200:
-                                dog.append(names[0].strip() + "/" + names[1].strip())
-                            else:
-                                dog.append(names[1].strip() + "/" + names[0].strip())
-
-                all_dogs.append(dog)
+                            dog.append("/" + names[0].strip())
+                    else:
+                        if ord(names[0].strip()[0]) < 200:
+                            dog.append(names[0].strip() + "/" + names[1].strip())
+                        else:
+                            dog.append(names[1].strip() + "/" + names[0].strip())
+                    all_dogs.append(dog)
             except ValueError:
                 pass
     return all_dogs
