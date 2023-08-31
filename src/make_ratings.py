@@ -1,6 +1,7 @@
 from urllib.request import urlopen
 import mysql.connector
 import re
+
 try:
     from BeautifulSoup import BeautifulSoup
 except ImportError:
@@ -13,10 +14,10 @@ config.read('settings.ini')
 
 DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
 config = {
-  'user': config['DATABASE']['USER'],
-  'password': config['DATABASE']['PASSWORD'],
-  'host': config['DATABASE']['HOST'],
-  'database': DATABASE,
+    'user': config['DATABASE']['USER'],
+    'password': config['DATABASE']['PASSWORD'],
+    'host': config['DATABASE']['HOST'],
+    'database': DATABASE,
 }
 
 path, url = argv
@@ -86,10 +87,10 @@ def insert_into_database(all_dogs):
     cursor = connection.cursor()
 
     insert_query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, " \
-                   "Nickname, max_position, score) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                   "Nickname, max_position, score, link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
         if len(row) == 6:
-            cursor.execute(insert_query, [date] + row)
+            cursor.execute(insert_query, [date] + row + [url])
 
     connection.commit()
     cursor.close()

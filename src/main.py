@@ -78,7 +78,7 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f"SELECT date, position, max_position, score FROM results WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
+    query = f"SELECT date, position, max_position, score FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
     cursor.execute(query)
     score_details = cursor.fetchall()
 
@@ -96,7 +96,7 @@ def get_data():
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore 
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore, link
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
                                     GROUP BY Type, Sex, Nickname
@@ -128,8 +128,9 @@ def get_data():
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3]} for row in
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3], "link": row[4]} for row in
             rows]
+    print(data)
 
     return jsonify(data)
 
@@ -154,9 +155,10 @@ def delete_from_table():
     message = None
     cursor = mysql.connection.cursor()
     try:
-        cursor.execute("DROP TABLE IF EXISTS copy_results; CREATE TABLE copy_results AS SELECT * FROM results;")
-        cursor.execute("DELETE FROM results;")
-        cursor.execute("ALTER TABLE results AUTO_INCREMENT = 1;")
+        cursor.execute(f"DROP TABLE IF EXISTS {DATABASE}.{TABLE}_copy; "
+                       f"CREATE TABLE {DATABASE}.{TABLE}_copy AS SELECT * FROM {DATABASE}.{TABLE};")
+        cursor.execute(f"DELETE FROM {DATABASE}.{TABLE};")
+        cursor.execute(f"ALTER TABLE {DATABASE}.{TABLE} AUTO_INCREMENT = 1;")
         mysql.connection.commit()
         message = "Все данные успешно удалены!"
     except Exception:
@@ -177,11 +179,11 @@ def add_data_from_excel():
 
         values_list = df.apply(lambda row: (
             row['Date'], row['Position'], row['Type'], row['Sex'],
-            row['Nickname'], row['Max_position'], row['Score']
+            row['Nickname'], row['Max_position'], row['Score'], row['link']
         ), axis=1).tolist()
 
-        query = "INSERT INTO coursing.results (Date, Position, Type, Sex, Nickname, max_position, Score) " \
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) " \
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
 
         cursor.executemany(query, values_list)
         mysql.connection.commit()
@@ -215,25 +217,26 @@ def add_data_from_form():
     nickname = request.form['nickname']
     max_position = request.form['max_position']
     score = request.form['score']
+    link = request.form['link']
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            "INSERT INTO results (Date, Position, Type, Sex, Nickname, max_position, Score) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (date, position, dog_type, sex, nickname, max_position, score))
+            f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (date, position, dog_type, sex, nickname, max_position, score, link))
         mysql.connection.commit()
         message = "Данные успешно внесены из формы!"
-    except Exception:
+    except Exception as e:
         mysql.connection.rollback()
-        message = "Ошибка при занесении данных из формы!"
+        message = f"Ошибка при занесении данных из формы! \nОшибка: {e}"
     finally:
         cur.close()
         return message
 
 
 def download_excel(cursor, full=True):
-    query = "SELECT * FROM results"
+    query = f"SELECT * FROM {DATABASE}.{TABLE}"
     cursor.execute(query)
     result = cursor.fetchall()
 
