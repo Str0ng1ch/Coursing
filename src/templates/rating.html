@@ -14,6 +14,18 @@
             padding: 20px 0;
             margin-top: 40px;
         }
+
+        .female-row {
+            background-color: rgba(247, 151, 247, 0.5);
+        }
+
+        .male-row {
+            background-color: rgba(196, 227, 242, 0.5);
+        }
+
+        .table-header {
+            background-color: #D1F2A5;
+        }
     </style>
 </head>
 <body>
@@ -42,7 +54,7 @@
 <div class="container mt-5">
     <table class="table table-bordered">
         <thead>
-        <tr>
+        <tr class="table-header">
             <th>
                 <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                     Класс
@@ -205,7 +217,8 @@
                         }
 
                         let name = data[i].name.replace("/", "<br>");
-                        tableContent += '<tr><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
+                        let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+                        tableContent += '<tr class="' + genderClass + '"><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
                     }
                     console.log(maxScore)
                     if (maxScore > $("#maxScoreHolder").text()) {
