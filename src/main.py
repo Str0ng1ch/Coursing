@@ -78,7 +78,7 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f"SELECT date, position, max_position, score FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
+    query = f"SELECT date, position, max_position, score, link FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
     cursor.execute(query)
     score_details = cursor.fetchall()
 
@@ -96,7 +96,7 @@ def get_data():
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore, link
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
                                     GROUP BY Type, Sex, Nickname
@@ -128,10 +128,55 @@ def get_data():
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3], "link": row[4]} for row in
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3]} for row in
             rows]
     print(data)
+    return jsonify(data)
 
+
+@app.route('/get-all-data', methods=['POST'])
+def get_all_data():
+    print(request.json)
+    selected_sex = request.json['selectedSex']
+    name_search = request.json['nameSearch']
+    selected_rating = request.json['selectedRating']
+    selected_type = request.json['selectedType']
+    # selected_date = request.json['selectedDate']
+    all_rows = request.json.get('allRows', False)
+
+    cur = mysql.connection.cursor()
+    base_query = f"""SELECT * FROM {DATABASE}.{TABLE}"""
+    print(cur.execute(base_query))
+    conditions = []
+    params = []
+
+    if selected_type != "all":
+        conditions.append("Type=%s")
+        params.append(selected_type)
+    if selected_sex != "all":
+        conditions.append("Sex=%s")
+        params.append(selected_sex)
+    if name_search:
+        conditions.append("Nickname LIKE %s")
+        params.append("%" + name_search + "%")
+    if selected_rating != "all":
+        rating_range = selected_rating.split('-')
+        conditions.append("TotalScore BETWEEN %s AND %s")
+        params.extend([rating_range[0], rating_range[1]])
+
+    if conditions:
+        query = base_query + " WHERE " + " AND ".join(conditions)
+    else:
+        query = base_query
+
+    query += " ORDER BY TotalScore DESC, Nickname ASC"
+    if not all_rows:
+        query += " LIMIT 9"
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    data = [{"date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
+             "max_position": row[6], "score": row[7], "link": row[8]} for row in rows]
+    print(data)
     return jsonify(data)
 
 
@@ -161,9 +206,9 @@ def delete_from_table():
         cursor.execute(f"ALTER TABLE {DATABASE}.{TABLE} AUTO_INCREMENT = 1;")
         mysql.connection.commit()
         message = "Все данные успешно удалены!"
-    except Exception:
+    except Exception as e:
         mysql.connection.rollback()
-        message = "Ошибка при удалении данных!"
+        message = f"Ошибка при удалении данных! \nОшибка: {e}"
     finally:
         cursor.close()
         return message
@@ -188,9 +233,9 @@ def add_data_from_excel():
         cursor.executemany(query, values_list)
         mysql.connection.commit()
         message = "Данные успешно внесены из Excel файла!"
-    except Exception:
+    except Exception as e:
         mysql.connection.rollback()
-        message = "Ошибка при занесении данных из Excel файла!"
+        message = f"Ошибка при занесении данных из Excel файла! \nОшибка: {e}"
     finally:
         cursor.close()
         return message
@@ -202,8 +247,8 @@ def run_script():
     try:
         subprocess.run(['python', 'src/make_ratings.py', link], check=True)
         message = f"Данные успешно внесены из {link}"
-    except Exception:
-        message = f"Ошибка при занесении данных из {link}"
+    except Exception as e:
+        message = f"Ошибка при занесении данных из {link}. \nОшибка: {e}"
     finally:
         return message
 
@@ -294,12 +339,41 @@ def add_data():
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={"Content-Disposition": "attachment;filename=template.xlsx"}
             )
-        except Exception:
-            message = "Ошибка при скачивании Excel файла!"
+        except Exception as e:
+            message = f"Ошибка при скачивании Excel файла! \nОшибка: {e}"
         finally:
             cursor.close()
 
     return render_template('add_data.html', message=message)
+
+
+@app.route("/update-data", methods=["POST"])
+def update_data():
+    message = None
+    updated_data = request.json
+    date = updated_data['date']
+    position = updated_data['position']
+    dog_type = updated_data['type']
+    sex = updated_data['sex']
+    nickname = updated_data['nickname']
+    max_position = updated_data['max_position']
+    score = updated_data['score']
+    link = updated_data['link']
+
+    cur = mysql.connection.cursor()
+    try:
+        cur.execute(
+            f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (date, position, dog_type, sex, nickname, max_position, score, link))
+        mysql.connection.commit()
+        message = "Данные успешно изменены в таблице!"
+    except Exception as e:
+        mysql.connection.rollback()
+        message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
+    finally:
+        cur.close()
+        return message
 
 
 error_handlers = {

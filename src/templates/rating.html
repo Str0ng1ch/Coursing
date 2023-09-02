@@ -85,13 +85,14 @@
             <th>
                 <div class="d-flex align-items-center">
                     Баллы
-                    <select class="form-control ml-2" id="ratingDropdown"></select>
+                    <select class="form-control ml-2" id="ratingDropdown">
+                        <option value="all" selected>Все</option>
+                    </select>
                 </div>
             </th>
         </tr>
         </thead>
         <tbody id="dogData">
-        <!-- Таблица будет заполняться данными с помощью JavaScript -->
         </tbody>
     </table>
     <div id="noResultsMessage" class="text-center mt-3" style="display: none;">
@@ -173,28 +174,55 @@
         $("#ratingDropdown").html(dropdownOptions);
     }
 
-    $(document).ready(function () {
-        let initialSexSelection = $("#sexDropdown").val();
-        let initialNameSearch = $("#nameSearch").val();
-        let initialRatingSelection = $("#ratingDropdown").val();
-        let initialType = $("#typeDropdown").val();
-        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
-    });
+    // Пример обработчика события для редактируемой ячейки
+    $("#dogData").on("blur", "td[contenteditable='true']", function () {
+        const row = $(this).closest("tr");
+        const updatedData = {
+            // Получите обновленные данные из редактируемых ячеек
+            type: row.find("td:eq(0)").text(),
+            name: row.find("td:eq(1)").text(),
+            sex: row.find("td:eq(2)").text(),
+            score: row.find("td:eq(3)").text(),
+        };
 
-    function loadData(selectedType, selectedSex, nameSearch, selectedRating, link, allRows = false) {
+        // Отправьте обновленные данные на сервер для сохранения
         $.ajax({
-            url: "/get-data",
+            url: "/update-data", // Замените на соответствующий URL
             type: "POST",
-            data: JSON.stringify({
-                selectedType: selectedType,
-                selectedSex: selectedSex,
-                nameSearch: nameSearch,
-                selectedRating: selectedRating,
-                link: link,
-                allRows: allRows
-            }),
+            data: JSON.stringify(updatedData),
             contentType: "application/json; charset=utf-8",
             dataType: "json",
+            success: function (response) {
+                // Обработайте успешный ответ
+            },
+            error: function (error) {
+                // Обработайте ошибку
+            },
+        });
+    });
+
+
+        $(document).ready(function () {
+            let initialSexSelection = $("#sexDropdown").val();
+            let initialNameSearch = $("#nameSearch").val();
+            let initialRatingSelection = $("#ratingDropdown").val();
+            let initialType = $("#typeDropdown").val();
+            loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
+        });
+
+        function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+            $.ajax({
+                url: "/get-data",
+                type: "POST",
+                data: JSON.stringify({
+                    selectedType: selectedType,
+                    selectedSex: selectedSex,
+                    nameSearch: nameSearch,
+                    selectedRating: selectedRating,
+                    allRows: allRows
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
             success: function (data) {
                 let tableContent = '';
                 let maxScore = 0;
@@ -210,12 +238,15 @@
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
                         }
-
                         let name = data[i].name.replace("/", "<br>");
                         let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
-                        tableContent += '<tr class="' + genderClass + '"><td>' + data[i].type + '</td><td>' + name + '</td><td>' + data[i].sex + '</td><td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td></tr>';
+                        tableContent += '<tr class="' + genderClass + '">';
+                        tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
+                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
+                        tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                        tableContent += '</tr>';
                     }
-                    console.log(maxScore)
                     if (maxScore > $("#maxScoreHolder").text()) {
                         updateDropdown(maxScore);
                         $("#maxScoreHolder").text(maxScore);
@@ -249,14 +280,13 @@
                         dataType: "json",
                         success: function (scoreDetails) {
                             let modalTableContent = '';
-                            console.log(scoreDetails)
                             for (let i = 0; i < scoreDetails.length; i++) {
                                 let inputDate = new Date(scoreDetails[i][0]);
                                 let day = inputDate.getUTCDate().toString().padStart(2, '0');
                                 let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
                                 let year = inputDate.getUTCFullYear();
                                 let formattedDate = `${day}.${month}.${year}`;
-                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + data[i].link + '" target="_blank">Источник</a></td></tr>';
+                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Источник</a></td></tr>';
                             }
                             $("#modalTableBody").html(modalTableContent);
                             $("#infoModal").modal('show');
