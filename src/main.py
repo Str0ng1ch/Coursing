@@ -161,7 +161,7 @@ def get_all_data():
         params.append("%" + name_search + "%")
     if selected_rating != "all":
         rating_range = selected_rating.split('-')
-        conditions.append("TotalScore BETWEEN %s AND %s")
+        conditions.append("Score BETWEEN %s AND %s")
         params.extend([rating_range[0], rating_range[1]])
 
     if conditions:
@@ -169,14 +169,13 @@ def get_all_data():
     else:
         query = base_query
 
-    query += " ORDER BY TotalScore DESC, Nickname ASC"
+    query += " ORDER BY Score DESC, Nickname ASC"
     if not all_rows:
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
     data = [{"date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
              "max_position": row[6], "score": row[7], "link": row[8]} for row in rows]
-    print(data)
     return jsonify(data)
 
 
