@@ -174,7 +174,7 @@ def get_all_data():
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
+    data = [{"id": row[0], "date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
              "max_position": row[6], "score": row[7], "link": row[8]} for row in rows]
     return jsonify(data)
 
@@ -349,8 +349,10 @@ def add_data():
 @app.route("/update-data", methods=["POST"])
 def update_data():
     message = None
+    print(request.json)
     updated_data = request.json
-    date = updated_data['date']
+    row_id = updated_data['id']
+    date = updated_data['date'].split('.')
     position = updated_data['position']
     dog_type = updated_data['type']
     sex = updated_data['sex']
@@ -359,20 +361,35 @@ def update_data():
     score = updated_data['score']
     link = updated_data['link']
 
+    formatted_date = f"{date[2]}-{date[1]}-{date[0]}"
     cur = mysql.connection.cursor()
     try:
-        cur.execute(
-            f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (date, position, dog_type, sex, nickname, max_position, score, link))
+        update_query = f"""
+        UPDATE {DATABASE}.{TABLE}
+        SET
+          Date = %s,
+          Position = %s,
+          Type = %s,
+          Sex = %s,
+          Nickname = %s,
+          max_position = %s,
+          Score = %s,
+          link = %s
+        WHERE
+          ID = %s
+        """
+        cur.execute(update_query, (formatted_date, position, dog_type, sex, nickname, max_position, score, link, row_id))
         mysql.connection.commit()
+        print('success')
         message = "Данные успешно изменены в таблице!"
+        return jsonify({"message": message})
     except Exception as e:
         mysql.connection.rollback()
+        print(f'Ошибка: {e}')
         message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
+        return jsonify({"error": message}), 500
     finally:
         cur.close()
-        return message
 
 
 error_handlers = {

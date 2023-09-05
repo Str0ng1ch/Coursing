@@ -187,21 +187,62 @@
     </div>
 
     <h1 style="text-align: center">Изменить данные</h1>
+<div>
+    <input type="checkbox" id="columnID" class="column-checkbox">
+    <label for="columnID">ID</label>
+</div>
+<div>
+    <input type="checkbox" id="columnDate" class="column-checkbox" checked>
+    <label for="columnDate">Дата</label>
+</div>
+<div>
+    <input type="checkbox" id="columnPosition" class="column-checkbox" checked>
+    <label for="columnPosition">Позиция</label>
+</div>
+<div>
+    <input type="checkbox" id="columnType" class="column-checkbox" checked>
+    <label for="columnType">Класс</label>
+</div>
+<div>
+    <input type="checkbox" id="columnSex" class="column-checkbox" checked>
+    <label for="columnSex">Пол</label>
+</div>
+<div>
+    <input type="checkbox" id="columnNickname" class="column-checkbox" checked>
+    <label for="columnNickname">Кличка</label>
+</div>
+<div>
+    <input type="checkbox" id="columnMaxPosition" class="column-checkbox" checked>
+    <label for="columnMaxPosition">Максимальная позиция</label>
+</div>
+<div>
+    <input type="checkbox" id="columnScore" class="column-checkbox" checked>
+    <label for="columnScore">Баллы</label>
+</div>
+<div>
+    <input type="checkbox" id="columnLink" class="column-checkbox" checked>
+    <label for="columnLink">Ссылка на источник</label>
+</div>
     <div class="container mt-5">
         <table class="table table-bordered">
             <thead>
             <tr class="table-header">
-                <th>
-                    <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                        Дата
-                    </div>
-                </th>
-                <th>
+                <th data-column="columnID">
+            <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                ID
+            </div>
+        </th>
+        <th data-column="columnDate">
+            <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                Дата
+            </div>
+        </th>
+                <th data-column="columnPosition">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                         Позиция
                     </div>
                 </th>
-                <th>
+                <th data-column="columnType">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                         Класс
                         <select class="form-control ml-2" id="typeDropdown">
@@ -212,7 +253,7 @@
                         </select>
                     </div>
                 </th>
-                <th>
+                <th data-column="columnSex">
                     <div class="d-flex align-items-center">
                         Пол
                         <select class="form-control ml-2" id="sexDropdown">
@@ -222,27 +263,26 @@
                         </select>
                     </div>
                 </th>
-                <th>
+                <th data-column="columnNickname">
                     <div class="d-flex align-items-center">
                         Кличка
                         <input type="text" class="form-control ml-2" id="nameSearch" placeholder="Поиск...">
                     </div>
                 </th>
-                <th>
+                <th data-column="columnMaxPosition">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                         Максимальная позиция
                     </div>
                 </th>
-                <th>
+                <th data-column="columnScore">
                     <div class="d-flex align-items-center">
                         Баллы
                         <select class="form-control ml-2" id="ratingDropdown">
                             <option value="all" selected>Все</option>
-                            <option value="0-9" selected>0-9</option>
                         </select>
                     </div>
                 </th>
-                <th>
+                <th data-column="columnLink">
                     <div class="d-flex align-items-center">
                         Ссылка на источник
                     </div>
@@ -264,12 +304,17 @@
     </div>
 
     <br>
+    <div class="text-center">
+        <button class="btn btn-success mt-3" id="changeButton">Изменить данные в таблице</button>
+    </div>
+
+    <br>
     <br>
 
     <div class="row" style="text-align: center">
         <div class="col"></div>
         <div class="col-8">
-            <h1>Очистить базу данных</h1>
+            <h1>Удалить данные</h1>
             <button type="button" class="btn btn-danger mt-3" data-toggle="modal" data-target="#confirmModal"
                     style="align-self: center">
                 Очистить базу данных
@@ -346,6 +391,8 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     var count = 0;
+     var SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
+
 
     document.addEventListener("DOMContentLoaded", function () {
         let messageElement = document.getElementById("message");
@@ -379,173 +426,259 @@
         $("#ratingDropdown").html(dropdownOptions);
     }
 
-    // Пример обработчика события для редактируемой ячейки
-    {#$("#dogData").on("blur", "td[contenteditable='true']", function () {#}
-    {#    const row = $(this).closest("tr");#}
-    {#    const updatedData = {#}
-    {#        // Получите обновленные данные из редактируемых ячеек#}
-    {#        type: row.find("td:eq(0)").text(),#}
-    {#        name: row.find("td:eq(1)").text(),#}
-    {#        sex: row.find("td:eq(2)").text(),#}
-    {#        score: row.find("td:eq(3)").text(),#}
-    {#    };#}
-    {##}
-    {#    // Отправьте обновленные данные на сервер для сохранения#}
-    {#    $.ajax({#}
-    {#        url: "/update-data", // Замените на соответствующий URL#}
-    {#        type: "POST",#}
-    {#        data: JSON.stringify(updatedData),#}
-    {#        contentType: "application/json; charset=utf-8",#}
-    {#        dataType: "json",#}
-    {#        success: function (response) {#}
-    {#            // Обработайте успешный ответ#}
-    {#        },#}
-    {#        error: function (error) {#}
-    {#            // Обработайте ошибку#}
-    {#        },#}
-    {#    });#}
-    {#})
-        ;
-        #}
+    $("#dogData").on("blur", "td[contenteditable='true']", function () {
+        const row = $(this).closest("tr");
+        const updatedData = {
+            id: row.find("td:eq(0)").text(),
+            date: row.find("td:eq(1)").text(),
+            position: row.find("td:eq(2)").text(),
+            type: row.find("td:eq(3)").text(),
+            sex: row.find("td:eq(4)").text(),
+            nickname: row.find("td:eq(5)").text(),
+            max_position: row.find("td:eq(6)").text(),
+            score: row.find("td:eq(7)").text(),
+            link: row.find("td:eq(8)").text(),
+        };
 
-
-        $(document).ready(function () {
-            let initialSexSelection = $("#sexDropdown").val();
-            let initialNameSearch = $("#nameSearch").val();
-            let initialRatingSelection = $("#ratingDropdown").val();
-            let initialType = $("#typeDropdown").val();
-            loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows = false);
+        $.ajax({
+            url: "/update-data",
+            type: "POST",
+            data: JSON.stringify(updatedData),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (response) {
+                console.log(response)
+            },
+            error: function (error) {
+                console.log(error)
+            },
         });
+    });
 
-        function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
-            $.ajax({
-                url: "/get-all-data",
-                type: "POST",
-                data: JSON.stringify({
-                    selectedType: selectedType,
-                    selectedSex: selectedSex,
-                    nameSearch: nameSearch,
-                    selectedRating: selectedRating,
-                    allRows: allRows
-                }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
-                success: function (data) {
-                    let tableContent = '';
-                    let maxScore = 0;
-                    if (data.length === 0) {
-                        $("#noResultsMessage").show();
-                        $("#showAllButton").hide();
-                        $("#showLessButton").hide();
-                        $("#dogData").html(tableContent);
-                    } else {
-                        $("#noResultsMessage").hide();
-                        for (let i = 0; i < data.length; i++) {
-                            let currentScore = parseInt(data[i].TotalScore);
-                            if (currentScore > maxScore) {
-                                maxScore = currentScore;
-                            }
 
-                            let name = data[i].Nickname.replace("/", "<br>");
-                            let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
-                            let inputDate = new Date(data[i].date);
-                            let day = inputDate.getUTCDate().toString().padStart(2, '0');
-                            let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
-                            let year = inputDate.getUTCFullYear();
-                            let formattedDate = `${day}.${month}.${year}`;
-                            tableContent += '<tr class="' + genderClass + '">';
-                            tableContent += '<td contenteditable="true">' + formattedDate + '</td>';
-                            tableContent += '<td contenteditable="true">' + data[i].position + '</td>';
-                            tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
-                            tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
-                            tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                            tableContent += '<td contenteditable="true">' + data[i].max_position + '</td>';
-                            tableContent += '<td><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
-                            tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
-                            tableContent += '</tr>';
+    $(document).ready(function () {
+            $('.column-checkbox').each(function () {
+        let columnName = $(this).attr('id'); // Получаем имя столбца из атрибута id флажка
+        let isColumnVisible = $(this).is(':checked'); // Проверяем, выбран ли флажок
+
+        // Выполняем действия в зависимости от изначального состояния флажка
+        if (isColumnVisible) {
+            $(`th[data-column="${columnName}"]`).show();
+            $(`td[data-column="${columnName}"]`).show();
+        } else {
+            $(`th[data-column="${columnName}"]`).hide();
+            $(`td[data-column="${columnName}"]`).hide();
+        }
+    });
+
+        let initialSexSelection = $("#sexDropdown").val();
+        let initialNameSearch = $("#nameSearch").val();
+        let initialRatingSelection = $("#ratingDropdown").val();
+        let initialType = $("#typeDropdown").val();
+        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows = false);
+    });
+
+    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+        SelectedType = selectedType;
+        SelectedSex = selectedSex;
+        NameSearch = nameSearch;
+        SelectedRating = selectedRating;
+        AllRows = allRows;
+        $.ajax({
+            url: "/get-all-data",
+            type: "POST",
+            data: JSON.stringify({
+                selectedType: selectedType,
+                selectedSex: selectedSex,
+                nameSearch: nameSearch,
+                selectedRating: selectedRating,
+                allRows: allRows
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                let tableContent = '';
+                let maxScore = 0;
+                if (data.length === 0) {
+                    $("#noResultsMessage").show();
+                    $("#showAllButton").hide();
+                    $("#showLessButton").hide();
+                    $("#dogData").html(tableContent);
+                } else {
+                    $("#noResultsMessage").hide();
+                    // Получите ссылку на элемент checkbox по его id
+                    let checkboxDate = document.getElementById("columnDate");
+                    let checkboxID = document.getElementById("columnID");
+                    let checkboxPosition = document.getElementById("columnPosition");
+                    let checkboxType = document.getElementById("columnType");
+                    let checkboxSex = document.getElementById("columnSex");
+                    let checkboxNickname = document.getElementById("columnNickname");
+                    let checkboxMaxPosition = document.getElementById("columnMaxPosition");
+                    let checkboxScore = document.getElementById("columnScore");
+                    let checkboxLink = document.getElementById("columnLink");
+
+                    for (let i = 0; i < data.length; i++) {
+                        let currentScore = parseInt(data[i].score);
+                        if (currentScore > maxScore) {
+                            maxScore = currentScore;
                         }
-                        if (maxScore > $("#maxScoreHolder").text()) {
-                            updateDropdown(maxScore);
-                            $("#maxScoreHolder").text(maxScore);
-                        }
 
-                        if (allRows) {
-                            $("#showAllButton").hide();
-                            $("#showLessButton").show();
+                        let name = data[i].Nickname.replace("/", "<br>");
+                        let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+                        let inputDate = new Date(data[i].date);
+                        let day = inputDate.getUTCDate().toString().padStart(2, '0');
+                        let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                        let year = inputDate.getUTCFullYear();
+                        let formattedDate = `${day}.${month}.${year}`;
+                        tableContent += '<tr class="' + genderClass + '">';
+                        if (checkboxID.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].id + '</td>';
                         } else {
-                            if (data.length === 9) {
-                                tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].id + '</td>';
+                        }
+                        if (checkboxDate.checked) {
+                            tableContent += '<td contenteditable="true">' + formattedDate + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + formattedDate + '</td>';
                             }
-                            $("#showAllButton").show();
-                            $("#showLessButton").hide();
+                        if (checkboxPosition.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].position + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].position + '</td>';
                         }
-
-                        if (data.length < 9) {
-                            $("#showAllButton").hide();
+                        if (checkboxType.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
+                        } else {
+                         tableContent += '<td contenteditable="true" style="display: none">' + data[i].type + '</td>';
                         }
+                        if (checkboxSex.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].sex + '</td>';
+                        }
+                        if (checkboxNickname.checked) {
+                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        } else {
+                            tableContent += '<td contenteditable="false" style="display: none"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
 
-                        $("#dogData").html(tableContent);
+                        }
+                        if (checkboxMaxPosition.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].max_position + '</td>';
+                        } else {
+                            tableContent += '<td style="display: none" contenteditable="true">' + data[i].max_position + '</td>';
+                        }
+                        if (checkboxScore.checked) {
+                        tableContent += '<td><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                        } else {
+                            tableContent += '<td style="display: none"><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                        }
+                        if (checkboxLink.checked) {
+                        tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].link + '</td>';
+
+                        }
+                        tableContent += '</tr>';
                     }
 
-                    $(".score-info").click(function () {
-                        let score = $(this).data('score');
-                        $.ajax({
-                            url: "/get-score-details",
-                            type: "POST",
-                            data: JSON.stringify({score: score}),
-                            contentType: "application/json; charset=utf-8",
-                            dataType: "json",
-                            success: function (scoreDetails) {
-                                let modalTableContent = '';
-                                for (let i = 0; i < scoreDetails.length; i++) {
-                                    let inputDate = new Date(scoreDetails[i][0]);
-                                    let day = inputDate.getUTCDate().toString().padStart(2, '0');
-                                    let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
-                                    let year = inputDate.getUTCFullYear();
-                                    let formattedDate = `${day}.${month}.${year}`;
-                                    modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Источник</a></td></tr>';
-                                }
-                                $("#modalTableBody").html(modalTableContent);
-                                $("#infoModal").modal('show');
-                            }
-                        });
-                    });
+                    if (maxScore > $("#maxScoreHolder").text()) {
+                        updateDropdown(maxScore);
+                        $("#maxScoreHolder").text(maxScore);
+                    }
+
+                    if (allRows) {
+                        $("#showAllButton").hide();
+                        $("#showLessButton").show();
+                    } else {
+                        if (data.length === 9) {
+                            tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                        }
+                        $("#showAllButton").show();
+                        $("#showLessButton").hide();
+                    }
+
+                    if (data.length < 9) {
+                        $("#showAllButton").hide();
+                    }
+
+                    $("#dogData").html(tableContent);
                 }
-            });
-        }
 
-        function updateData(allRows) {
-            let selectedType = $("#typeDropdown").val();
-            let selectedSex = $("#sexDropdown").val();
-            let nameSearch = $("#nameSearch").val();
-            let selectedRating = $("#ratingDropdown").val();
-            loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
-        }
-
-        $("#nameSearch").on('input', function () {
-            updateData(false);
+                $(".score-info").click(function () {
+                    let score = $(this).data('score');
+                    $.ajax({
+                        url: "/get-score-details",
+                        type: "POST",
+                        data: JSON.stringify({score: score}),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (scoreDetails) {
+                            let modalTableContent = '';
+                            for (let i = 0; i < scoreDetails.length; i++) {
+                                let inputDate = new Date(scoreDetails[i][0]);
+                                let day = inputDate.getUTCDate().toString().padStart(2, '0');
+                                let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                                let year = inputDate.getUTCFullYear();
+                                let formattedDate = `${day}.${month}.${year}`;
+                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Источник</a></td></tr>';
+                            }
+                            $("#modalTableBody").html(modalTableContent);
+                            $("#infoModal").modal('show');
+                        }
+                    });
+                });
+            }
         });
+    }
 
-        $("#sexDropdown").change(function () {
-            updateData(false);
-        });
+        // Обработчик изменения состояния флажков
+                $('.column-checkbox').change(function () {
+                    let columnName = $(this).attr('id'); // Получаем имя столбца из атрибута id флажка
+                    let isColumnVisible = $(this).is(':checked'); // Проверяем, выбран ли флажок
 
-        $("#ratingDropdown").change(function () {
-            updateData(false);
-        });
+                    if (isColumnVisible) {
+                        $(`th[data-column="${columnName}"]`).show();
+                        $(`td[data-column="${columnName}"]`).show();
+                    } else {
+                        $(`th[data-column="${columnName}"]`).hide();
+                        $(`td[data-column="${columnName}"]`).hide();
+                    }
 
-        $("#typeDropdown").change(function () {
-            updateData(false);
-        });
+        loadData(SelectedType, SelectedSex, NameSearch, SelectedRating, All_rows = false);
+                });
 
-        $("#showAllButton").click(function () {
-            console.log('here')
-            updateData(true);
-        });
+    function updateData(allRows) {
+        let selectedType = $("#typeDropdown").val();
+        let selectedSex = $("#sexDropdown").val();
+        let nameSearch = $("#nameSearch").val();
+        let selectedRating = $("#ratingDropdown").val();
+        loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
+    }
 
-        $("#showLessButton").click(function () {
-            updateData(false);
-        });
+    $("#nameSearch").on('input', function () {
+        updateData(false);
+    });
+
+    $("#sexDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#ratingDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#typeDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#showAllButton").click(function () {
+        console.log('here')
+        updateData(true);
+    });
+
+    $("#showLessButton").click(function () {
+        updateData(false);
+    });
 </script>
 </body>
 </html>

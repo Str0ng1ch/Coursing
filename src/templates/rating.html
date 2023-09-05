@@ -174,55 +174,27 @@
         $("#ratingDropdown").html(dropdownOptions);
     }
 
-    // Пример обработчика события для редактируемой ячейки
-    $("#dogData").on("blur", "td[contenteditable='true']", function () {
-        const row = $(this).closest("tr");
-        const updatedData = {
-            // Получите обновленные данные из редактируемых ячеек
-            type: row.find("td:eq(0)").text(),
-            name: row.find("td:eq(1)").text(),
-            sex: row.find("td:eq(2)").text(),
-            score: row.find("td:eq(3)").text(),
-        };
-
-        // Отправьте обновленные данные на сервер для сохранения
-        $.ajax({
-            url: "/update-data", // Замените на соответствующий URL
-            type: "POST",
-            data: JSON.stringify(updatedData),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (response) {
-                // Обработайте успешный ответ
-            },
-            error: function (error) {
-                // Обработайте ошибку
-            },
-        });
+    $(document).ready(function () {
+        let initialSexSelection = $("#sexDropdown").val();
+        let initialNameSearch = $("#nameSearch").val();
+        let initialRatingSelection = $("#ratingDropdown").val();
+        let initialType = $("#typeDropdown").val();
+        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
     });
 
-
-        $(document).ready(function () {
-            let initialSexSelection = $("#sexDropdown").val();
-            let initialNameSearch = $("#nameSearch").val();
-            let initialRatingSelection = $("#ratingDropdown").val();
-            let initialType = $("#typeDropdown").val();
-            loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
-        });
-
-        function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
-            $.ajax({
-                url: "/get-data",
-                type: "POST",
-                data: JSON.stringify({
-                    selectedType: selectedType,
-                    selectedSex: selectedSex,
-                    nameSearch: nameSearch,
-                    selectedRating: selectedRating,
-                    allRows: allRows
-                }),
-                contentType: "application/json; charset=utf-8",
-                dataType: "json",
+    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+        $.ajax({
+            url: "/get-data",
+            type: "POST",
+            data: JSON.stringify({
+                selectedType: selectedType,
+                selectedSex: selectedSex,
+                nameSearch: nameSearch,
+                selectedRating: selectedRating,
+                allRows: allRows
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
             success: function (data) {
                 let tableContent = '';
                 let maxScore = 0;
@@ -241,9 +213,9 @@
                         let name = data[i].name.replace("/", "<br>");
                         let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
                         tableContent += '<tr class="' + genderClass + '">';
-                        tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
-                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                        tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
+                        tableContent += '<td>' + data[i].type + '</td>';
+                        tableContent += '<td><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        tableContent += '<td>' + data[i].sex + '</td>';
                         tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
                         tableContent += '</tr>';
                     }
