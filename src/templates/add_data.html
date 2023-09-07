@@ -153,7 +153,7 @@
         <br>
 
         <div class="col-md-6 mt-mb-4">
-            <h1>Скачать Excel файл</h1>
+            <h2>Скачать Excel файл</h2>
             <form action="/add-data" method="post" class="mb-3">
                 <a href="{{ url_for('add_data', download_full_excel='true') }}" class="btn btn-success">Скачать
                     Excel</a>
@@ -163,7 +163,7 @@
 
             <br>
 
-            <h1>Загрузить Excel файл</h1>
+            <h2>Загрузить Excel файл</h2>
             <form action="/add-data" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
                     <input type="file" class="form-control-file" id="excel_file" name="excel_file" accept=".xls, .xlsx"
@@ -175,7 +175,7 @@
             <br>
             <br>
 
-            <h1>Загрузить с ProCoursing</h1>
+            <h2>Загрузить с ProCoursing</h2>
             <form action="/add-data" method="post" class="mb-3">
                 <div class="input-group">
                     <label for="link" class="input-group-text">Ссылка:</label>
@@ -309,6 +309,39 @@
     <div class="text-center">
         <button class="btn btn-primary mt-3" id="showAllButton">Показать больше</button>
         <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
+    </div>
+
+    <br>
+
+    <div class="container mt-5">
+        <table class="table table-bordered">
+            <thead>
+            <tr class="table-header">
+                <th>
+                    <div class="d-flex align-items-center">
+                        Кличка
+                        <input type="text" class="form-control ml-2" id="nameSearch2" placeholder="Поиск...">
+                    </div>
+                </th>
+                <th>
+                    <div class="d-flex align-items-center">
+                        Ссылка на источник
+                    </div>
+                </th>
+            </tr>
+            </thead>
+            <tbody id="dogNickname">
+            </tbody>
+        </table>
+        <div id="noResultsMessageNickname" class="text-center mt-3" style="display: none;">
+            Ничего не найдено. <br>
+            Попробуйте написать имя на другом языке или поставить другие параметры.
+        </div>
+    </div>
+
+    <div class="text-center">
+        <button class="btn btn-primary mt-3" id="showAllButton2">Показать больше</button>
+        <button class="btn btn-secondary mt-3 ml-2" id="showLessButton2">Показать меньше</button>
     </div>
 
     <br>
@@ -464,6 +497,35 @@
         });
     });
 
+    $("#dogNickname").on("blur", "td[contenteditable='true']", function () {
+        const cell = $(this);
+        const row = $(this).closest("tr");
+        const updatedData = {
+            nickname: row.find("td:eq(0)").text(),
+            link: row.find("td:eq(1)").text(),
+        };
+
+        $.ajax({
+            url: "/update-nickname",
+            type: "POST",
+            data: JSON.stringify(updatedData),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (response) {
+                cell.addClass("bg-success");
+                setTimeout(function () {
+                    cell.removeClass("bg-success");
+                }, 1500);
+            },
+            error: function (error) {
+                cell.addClass("bg-danger");
+                setTimeout(function () {
+                    cell.removeClass("bg-danger");
+                }, 1500);
+            },
+        });
+    });
+
     $(document).ready(function () {
         $('.column-checkbox').each(function () {
             let columnName = $(this).attr('id');
@@ -480,9 +542,11 @@
 
         let initialSexSelection = $("#sexDropdown").val();
         let initialNameSearch = $("#nameSearch").val();
+        let initialNameSearch2 = $("#nameSearch2").val();
         let initialRatingSelection = $("#ratingDropdown").val();
         let initialType = $("#typeDropdown").val();
         loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows=false);
+        loadNicknames(initialNameSearch2, all_rows=false);
     });
 
     function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows=false) {
@@ -637,6 +701,54 @@
         });
     }
 
+    function loadNicknames(nameSearch, allRows=true) {
+        $.ajax({
+            url: "/get-nicknames",
+            type: "POST",
+            data: JSON.stringify({
+                nameSearch: nameSearch,
+                allRows: allRows
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                let tableContent = '';
+                if (data.length === 0) {
+                    $("#noResultsMessage2").show();
+                    $("#showAllButton2").hide();
+                    $("#showLessButton2").hide();
+                    $("#dogNickname").html(tableContent);
+                } else {
+                    $("#noResultsMessage2").hide();
+                    for (let i = 0; i < data.length; i++) {
+                        let name = data[i].nickname.replace("/", "<br>");
+                        tableContent += '<tr>';
+                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
+                        tableContent += '</tr>';
+                    }
+
+                    if (allRows) {
+                        $("#showAllButton2").hide();
+                        $("#showLessButton2").show();
+                    } else {
+                        if (data.length === 9) {
+                            tableContent += '<tr><td> ... </td><td> ... </td>';
+                        }
+                        $("#showAllButton2").show();
+                        $("#showLessButton2").hide();
+                    }
+
+                    if (data.length < 9) {
+                        $("#showAllButton2").hide();
+                    }
+
+                    $("#dogNickname").html(tableContent);
+                }
+            }
+        });
+    }
+
 
     $('.column-checkbox').change(function () {
         let columnName = $(this).attr('id');
@@ -660,8 +772,17 @@
         loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
     }
 
+    function updateNickname(allRows) {
+        let nameSearch = $("#nameSearch2").val();
+        loadNicknames(nameSearch, allRows)
+    }
+
     $("#nameSearch").on('input', function () {
         updateData(false);
+    });
+
+    $("#nameSearch2").on('input', function () {
+        updateNickname(false);
     });
 
     $("#sexDropdown").change(function () {
@@ -680,8 +801,16 @@
         updateData(true);
     });
 
+    $("#showAllButton2").click(function () {
+        updateNickname(true);
+    });
+
     $("#showLessButton").click(function () {
         updateData(false);
+    });
+
+    $("#showLessButton2").click(function () {
+        updateNickname(false);
     });
 </script>
 </body>

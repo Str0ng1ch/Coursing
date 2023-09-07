@@ -178,6 +178,36 @@ def get_all_data():
     return jsonify(data)
 
 
+@app.route('/get-nicknames', methods=['POST'])
+def get_nicknames():
+    name_search = request.json['nameSearch']
+    all_rows = request.json.get('allRows', False)
+
+    cur = mysql.connection.cursor()
+    base_query = f"""SELECT DISTINCT(Nickname), link FROM {DATABASE}.{TABLE}"""
+
+    conditions = []
+    params = []
+
+    if name_search:
+        conditions.append("Nickname LIKE %s")
+        params.append("%" + name_search + "%")
+
+    if conditions:
+        query = base_query + " WHERE " + " AND ".join(conditions)
+    else:
+        query = base_query
+
+    query += " ORDER BY Score DESC, Nickname ASC"
+    if not all_rows:
+        query += " LIMIT 9"
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    data = [{"nickname": row[0], "link": row[1]} for row in rows]
+
+    return jsonify(data)
+
+
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -380,6 +410,33 @@ def update_data():
         """
         cur.execute(update_query,
                     (formatted_date, position, dog_type, sex, nickname, max_position, score, link, row_id))
+        mysql.connection.commit()
+        message = "Данные успешно изменены в таблице!"
+        return jsonify({"message": message})
+    except Exception as e:
+        mysql.connection.rollback()
+        message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
+        return jsonify({"error": message}), 500
+    finally:
+        cur.close()
+
+
+@app.route("/update-nickname", methods=["POST"])
+def update_nickname():
+    message = None
+    updated_data = request.json
+    nickname = updated_data['nickname']
+    link = updated_data['link']
+
+    cur = mysql.connection.cursor()
+    try:
+        update_query = f"""
+        UPDATE {DATABASE}.{TABLE}
+        SET
+          link = %s
+        WHERE Nickname = %s
+        """
+        cur.execute(update_query, (link, nickname))
         mysql.connection.commit()
         message = "Данные успешно изменены в таблице!"
         return jsonify({"message": message})

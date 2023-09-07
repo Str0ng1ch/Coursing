@@ -87,10 +87,10 @@ def insert_into_database(all_dogs):
     cursor = connection.cursor()
 
     insert_query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, " \
-                   "Nickname, max_position, score, link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                   "Nickname, max_position, score, link, breedarchive_link) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     for row in all_dogs:
         if len(row) == 6:
-            cursor.execute(insert_query, [date] + row + [url])
+            cursor.execute(insert_query, [date] + row + [url] + [])
 
     connection.commit()
     cursor.close()
