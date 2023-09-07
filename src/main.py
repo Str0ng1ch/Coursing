@@ -1,12 +1,13 @@
+import configparser
+import io
+import subprocess
+from functools import wraps
+
 import mysql.connector
+import pandas as pd
 from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, session
 from flask_mysqldb import MySQL
-import configparser
-import pandas as pd
-import subprocess
-import io
 from openpyxl import Workbook
-from functools import wraps
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -136,7 +137,6 @@ def get_data():
 
 @app.route('/get-all-data', methods=['POST'])
 def get_all_data():
-    print(request.json)
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
     selected_rating = request.json['selectedRating']
@@ -146,7 +146,6 @@ def get_all_data():
 
     cur = mysql.connection.cursor()
     base_query = f"""SELECT * FROM {DATABASE}.{TABLE}"""
-    print(cur.execute(base_query))
     conditions = []
     params = []
 
@@ -222,8 +221,8 @@ def add_data_from_excel():
         df = pd.read_excel(file)
 
         values_list = df.apply(lambda row: (
-            row['Date'], row['Position'], row['Type'], row['Sex'],
-            row['Nickname'], row['Max_position'], row['Score'], row['link']
+            row['Дата'], row['Место'], row['Класс'], row['Пол'],
+            row['Кличка'], row['Всего мест'], row['Очки'], row['Ссылка на источник']
         ), axis=1).tolist()
 
         query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) " \
@@ -284,7 +283,8 @@ def download_excel(cursor, full=True):
     cursor.execute(query)
     result = cursor.fetchall()
 
-    column_names = [column[0] for column in cursor.description]
+    column_names = ['ID', 'Дата', 'Место', 'Класс', 'Пол', 'Кличка',
+                    'Всего мест', 'Очки', 'Ссылка на источник']
 
     wb = Workbook()
     ws = wb.active
@@ -325,8 +325,8 @@ def add_data():
                 content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 headers={"Content-Disposition": "attachment;filename=database.xlsx"}
             )
-        except Exception:
-            message = "Ошибка при скачивании Excel файла!"
+        except Exception as e:
+            message = f"Ошибка при скачивании Excel файла! \nОшибка: {e}"
         finally:
             cursor.close()
     elif 'download_part_excel' in request.args:
@@ -349,8 +349,8 @@ def add_data():
 @app.route("/update-data", methods=["POST"])
 def update_data():
     message = None
-    print(request.json)
     updated_data = request.json
+    print(request.json)
     row_id = updated_data['id']
     date = updated_data['date'].split('.')
     position = updated_data['position']
@@ -378,14 +378,13 @@ def update_data():
         WHERE
           ID = %s
         """
-        cur.execute(update_query, (formatted_date, position, dog_type, sex, nickname, max_position, score, link, row_id))
+        cur.execute(update_query,
+                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, row_id))
         mysql.connection.commit()
-        print('success')
         message = "Данные успешно изменены в таблице!"
         return jsonify({"message": message})
     except Exception as e:
         mysql.connection.rollback()
-        print(f'Ошибка: {e}')
         message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
         return jsonify({"error": message}), 500
     finally:
