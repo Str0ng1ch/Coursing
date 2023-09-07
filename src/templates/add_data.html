@@ -187,56 +187,64 @@
     </div>
 
     <h1 style="text-align: center">Изменить данные</h1>
-<div>
-    <input type="checkbox" id="columnID" class="column-checkbox">
-    <label for="columnID">ID</label>
-</div>
-<div>
-    <input type="checkbox" id="columnDate" class="column-checkbox" checked>
-    <label for="columnDate">Дата</label>
-</div>
-<div>
-    <input type="checkbox" id="columnPosition" class="column-checkbox" checked>
-    <label for="columnPosition">Позиция</label>
-</div>
-<div>
-    <input type="checkbox" id="columnType" class="column-checkbox" checked>
-    <label for="columnType">Класс</label>
-</div>
-<div>
-    <input type="checkbox" id="columnSex" class="column-checkbox" checked>
-    <label for="columnSex">Пол</label>
-</div>
-<div>
-    <input type="checkbox" id="columnNickname" class="column-checkbox" checked>
-    <label for="columnNickname">Кличка</label>
-</div>
-<div>
-    <input type="checkbox" id="columnMaxPosition" class="column-checkbox" checked>
-    <label for="columnMaxPosition">Максимальная позиция</label>
-</div>
-<div>
-    <input type="checkbox" id="columnScore" class="column-checkbox" checked>
-    <label for="columnScore">Баллы</label>
-</div>
-<div>
-    <input type="checkbox" id="columnLink" class="column-checkbox" checked>
-    <label for="columnLink">Ссылка на источник</label>
-</div>
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>
+                <input type="checkbox" id="columnID" class="column-checkbox">
+                <label for="columnID">ID</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnDate" class="column-checkbox" checked>
+                <label for="columnDate">Дата</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnPosition" class="column-checkbox">
+                <label for="columnPosition">Позиция</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnType" class="column-checkbox" checked>
+                <label for="columnType">Класс</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnSex" class="column-checkbox" checked>
+                <label for="columnSex">Пол</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnNickname" class="column-checkbox" checked>
+                <label for="columnNickname">Кличка</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnMaxPosition" class="column-checkbox">
+                <label for="columnMaxPosition">Максимальная позиция</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnScore" class="column-checkbox">
+                <label for="columnScore">Баллы</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnLink" class="column-checkbox" checked>
+                <label for="columnLink">Ссылка на источник</label>
+            </th>
+
+        </tr>
+        </thead>
+    </table>
+
     <div class="container mt-5">
         <table class="table table-bordered">
             <thead>
             <tr class="table-header">
                 <th data-column="columnID">
-            <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                ID
-            </div>
-        </th>
-        <th data-column="columnDate">
-            <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                Дата
-            </div>
-        </th>
+                    <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                        ID
+                    </div>
+                </th>
+                <th data-column="columnDate">
+                    <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                        Дата
+                    </div>
+                </th>
                 <th data-column="columnPosition">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                         Позиция
@@ -382,7 +390,6 @@
     </div>
 </div>
 
-
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
@@ -391,7 +398,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     var count = 0;
-     var SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
+    var SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
 
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -428,6 +435,7 @@
 
     $("#dogData").on("blur", "td[contenteditable='true']", function () {
         const row = $(this).closest("tr");
+        console.log(row.text())
         const updatedData = {
             id: row.find("td:eq(0)").text(),
             date: row.find("td:eq(1)").text(),
@@ -455,30 +463,28 @@
         });
     });
 
-
     $(document).ready(function () {
-            $('.column-checkbox').each(function () {
-        let columnName = $(this).attr('id'); // Получаем имя столбца из атрибута id флажка
-        let isColumnVisible = $(this).is(':checked'); // Проверяем, выбран ли флажок
+        $('.column-checkbox').each(function () {
+            let columnName = $(this).attr('id');
+            let isColumnVisible = $(this).is(':checked');
 
-        // Выполняем действия в зависимости от изначального состояния флажка
-        if (isColumnVisible) {
-            $(`th[data-column="${columnName}"]`).show();
-            $(`td[data-column="${columnName}"]`).show();
-        } else {
-            $(`th[data-column="${columnName}"]`).hide();
-            $(`td[data-column="${columnName}"]`).hide();
-        }
-    });
+            if (isColumnVisible) {
+                $(`th[data-column="${columnName}"]`).show();
+                $(`td[data-column="${columnName}"]`).show();
+            } else {
+                $(`th[data-column="${columnName}"]`).hide();
+                $(`td[data-column="${columnName}"]`).hide();
+            }
+        });
 
         let initialSexSelection = $("#sexDropdown").val();
         let initialNameSearch = $("#nameSearch").val();
         let initialRatingSelection = $("#ratingDropdown").val();
         let initialType = $("#typeDropdown").val();
-        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows = false);
+        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows=false);
     });
 
-    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows=false) {
         SelectedType = selectedType;
         SelectedSex = selectedSex;
         NameSearch = nameSearch;
@@ -506,7 +512,6 @@
                     $("#dogData").html(tableContent);
                 } else {
                     $("#noResultsMessage").hide();
-                    // Получите ссылку на элемент checkbox по его id
                     let checkboxDate = document.getElementById("columnDate");
                     let checkboxID = document.getElementById("columnID");
                     let checkboxPosition = document.getElementById("columnPosition");
@@ -532,7 +537,7 @@
                         let formattedDate = `${day}.${month}.${year}`;
                         tableContent += '<tr class="' + genderClass + '">';
                         if (checkboxID.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].id + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].id + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].id + '</td>';
                         }
@@ -540,40 +545,40 @@
                             tableContent += '<td contenteditable="true">' + formattedDate + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + formattedDate + '</td>';
-                            }
+                        }
                         if (checkboxPosition.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].position + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].position + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].position + '</td>';
                         }
                         if (checkboxType.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].type + '</td>';
                         } else {
-                         tableContent += '<td contenteditable="true" style="display: none">' + data[i].type + '</td>';
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].type + '</td>';
                         }
                         if (checkboxSex.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].sex + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].sex + '</td>';
                         }
                         if (checkboxNickname.checked) {
-                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                            tableContent += '<td contenteditable="true"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
                         } else {
-                            tableContent += '<td contenteditable="false" style="display: none"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                            tableContent += '<td contenteditable="true" style="display: none"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
 
                         }
                         if (checkboxMaxPosition.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].max_position + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].max_position + '</td>';
                         } else {
                             tableContent += '<td style="display: none" contenteditable="true">' + data[i].max_position + '</td>';
                         }
                         if (checkboxScore.checked) {
-                        tableContent += '<td><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                            tableContent += '<td contenteditable="true"><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td->';
                         } else {
-                            tableContent += '<td style="display: none"><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                            tableContent += '<td contenteditable="true" style="display: none"><div class="d-flex align-items-center">' + data[i].score + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
                         }
                         if (checkboxLink.checked) {
-                        tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
+                            tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].link + '</td>';
 
@@ -631,21 +636,20 @@
         });
     }
 
-        // Обработчик изменения состояния флажков
-                $('.column-checkbox').change(function () {
-                    let columnName = $(this).attr('id'); // Получаем имя столбца из атрибута id флажка
-                    let isColumnVisible = $(this).is(':checked'); // Проверяем, выбран ли флажок
 
-                    if (isColumnVisible) {
-                        $(`th[data-column="${columnName}"]`).show();
-                        $(`td[data-column="${columnName}"]`).show();
-                    } else {
-                        $(`th[data-column="${columnName}"]`).hide();
-                        $(`td[data-column="${columnName}"]`).hide();
-                    }
+    $('.column-checkbox').change(function () {
+        let columnName = $(this).attr('id');
+        let isColumnVisible = $(this).is(':checked');
 
-        loadData(SelectedType, SelectedSex, NameSearch, SelectedRating, All_rows = false);
-                });
+        if (isColumnVisible) {
+            $(`th[data-column="${columnName}"]`).show();
+            $(`td[data-column="${columnName}"]`).show();
+        } else {
+            $(`th[data-column="${columnName}"]`).hide();
+            $(`td[data-column="${columnName}"]`).hide();
+        }
+        loadData(SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows);
+    });
 
     function updateData(allRows) {
         let selectedType = $("#typeDropdown").val();
