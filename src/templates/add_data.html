@@ -138,7 +138,7 @@
 
                 <div class="form-row">
                     <div class="col-md-3">
-                        <label for="link">Ссылка:</label>
+                        <label for="link">Ссылка на результаты:</label>
                     </div>
                     <div class="col-md-9">
                         <div class="form-group">
@@ -146,6 +146,18 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="link">Ссылка на Breed Archive:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="breed_link" name="breed_link" required>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-success">Добавить</button>
             </form>
         </div>
@@ -162,6 +174,7 @@
             </form>
 
             <br>
+            <br>
 
             <h2>Загрузить Excel файл</h2>
             <form action="/add-data" method="POST" enctype="multipart/form-data">
@@ -172,6 +185,7 @@
                 <button type="submit" class="btn btn-success">Загрузить Excel файл</button>
             </form>
 
+            <br>
             <br>
             <br>
 
@@ -325,7 +339,7 @@
                 </th>
                 <th>
                     <div class="d-flex align-items-center">
-                        Ссылка на источник
+                        Ссылка на Breed Archive
                     </div>
                 </th>
             </tr>
@@ -545,11 +559,11 @@
         let initialNameSearch2 = $("#nameSearch2").val();
         let initialRatingSelection = $("#ratingDropdown").val();
         let initialType = $("#typeDropdown").val();
-        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows=false);
-        loadNicknames(initialNameSearch2, all_rows=false);
+        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows = false);
+        loadNicknames(initialNameSearch2, all_rows = false);
     });
 
-    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows=false) {
+    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
         SelectedType = selectedType;
         SelectedSex = selectedSex;
         NameSearch = nameSearch;
@@ -589,6 +603,8 @@
 
                     for (let i = 0; i < data.length; i++) {
                         let currentScore = parseInt(data[i].score);
+                        let breed_link = data[i].breedLink;
+
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
                         }
@@ -627,7 +643,7 @@
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].sex + '</td>';
                         }
                         if (checkboxNickname.checked) {
-                            tableContent += '<td contenteditable="true"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                            tableContent += '<td contenteditable="true"><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
 
@@ -701,7 +717,7 @@
         });
     }
 
-    function loadNicknames(nameSearch, allRows=true) {
+    function loadNicknames(nameSearch, allRows = true) {
         $.ajax({
             url: "/get-nicknames",
             type: "POST",
@@ -723,8 +739,8 @@
                     for (let i = 0; i < data.length; i++) {
                         let name = data[i].nickname.replace("/", "<br>");
                         tableContent += '<tr>';
-                        tableContent += '<td contenteditable="false"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                        tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
+                        tableContent += '<td contenteditable="false"><a href="' + data[i].breedLink + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        tableContent += '<td contenteditable="true">' + data[i].breedLink + '</td>';
                         tableContent += '</tr>';
                     }
 

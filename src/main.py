@@ -97,7 +97,7 @@ def get_data():
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, SUM(Score) AS TotalScore
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
                                     GROUP BY Type, Sex, Nickname
@@ -129,9 +129,9 @@ def get_data():
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[3]} for row in
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3]} for row in
             rows]
-    print(data)
+
     return jsonify(data)
 
 
@@ -174,7 +174,7 @@ def get_all_data():
     cur.execute(query, params)
     rows = cur.fetchall()
     data = [{"id": row[0], "date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
-             "max_position": row[6], "score": row[7], "link": row[8]} for row in rows]
+             "max_position": row[6], "score": row[7], "link": row[8], "breedLink": row[9]} for row in rows]
     return jsonify(data)
 
 
@@ -184,7 +184,7 @@ def get_nicknames():
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT DISTINCT(Nickname), link FROM {DATABASE}.{TABLE}"""
+    base_query = f"""SELECT DISTINCT(Nickname), breedarchive_link FROM {DATABASE}.{TABLE}"""
 
     conditions = []
     params = []
@@ -198,12 +198,12 @@ def get_nicknames():
     else:
         query = base_query
 
-    query += " ORDER BY Score DESC, Nickname ASC"
+    query += " ORDER BY Nickname ASC"
     if not all_rows:
         query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"nickname": row[0], "link": row[1]} for row in rows]
+    data = [{"nickname": row[0], "breedLink": row[1]} for row in rows]
 
     return jsonify(data)
 
@@ -251,12 +251,13 @@ def add_data_from_excel():
         df = pd.read_excel(file)
 
         values_list = df.apply(lambda row: (
-            row['Дата'], row['Место'], row['Класс'], row['Пол'],
-            row['Кличка'], row['Всего мест'], row['Очки'], row['Ссылка на источник']
+            row['Дата'], row['Место'], row['Класс'], row['Пол'], row['Кличка'], row['Всего мест'],
+            row['Очки'], row['Ссылка на источник'], row['Ссылка на Breed Archive']
         ), axis=1).tolist()
 
-        query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) " \
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+        query = (f"INSERT INTO {DATABASE}.{TABLE} "
+                 f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link)"
+                 f" VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")
 
         cursor.executemany(query, values_list)
         mysql.connection.commit()
@@ -291,13 +292,15 @@ def add_data_from_form():
     max_position = request.form['max_position']
     score = request.form['score']
     link = request.form['link']
+    breed_link = request.form['breed_link']
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
-            f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, Score, link) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-            (date, position, dog_type, sex, nickname, max_position, score, link))
+            f"INSERT INTO {DATABASE}.{TABLE} "
+            f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (date, position, dog_type, sex, nickname, max_position, score, link, breed_link))
         mysql.connection.commit()
         message = "Данные успешно внесены из формы!"
     except Exception as e:
@@ -314,7 +317,7 @@ def download_excel(cursor, full=True):
     result = cursor.fetchall()
 
     column_names = ['ID', 'Дата', 'Место', 'Класс', 'Пол', 'Кличка',
-                    'Всего мест', 'Очки', 'Ссылка на источник']
+                    'Всего мест', 'Очки', 'Ссылка на источник', 'Ссылка на Breed Archive']
 
     wb = Workbook()
     ws = wb.active
@@ -380,7 +383,6 @@ def add_data():
 def update_data():
     message = None
     updated_data = request.json
-    print(request.json)
     row_id = updated_data['id']
     date = updated_data['date'].split('.')
     position = updated_data['position']
@@ -425,7 +427,7 @@ def update_data():
 def update_nickname():
     message = None
     updated_data = request.json
-    nickname = updated_data['nickname']
+    nickname = '/'.join(updated_data['nickname'].split('\n'))
     link = updated_data['link']
 
     cur = mysql.connection.cursor()
@@ -433,8 +435,8 @@ def update_nickname():
         update_query = f"""
         UPDATE {DATABASE}.{TABLE}
         SET
-          link = %s
-        WHERE Nickname = %s
+          breedarchive_link = %s
+        WHERE REPLACE(Nickname, '/', '') = %s
         """
         cur.execute(update_query, (link, nickname))
         mysql.connection.commit()

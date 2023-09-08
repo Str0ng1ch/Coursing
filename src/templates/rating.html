@@ -121,7 +121,7 @@
                     <tr>
                         <th>Дата</th>
                         <th>Позиция</th>
-                        <th>Макс. позиция</th>
+                        <th>Всего участников</th>
                         <th>Баллы</th>
                         <th>Ссылка</th>
                     </tr>
@@ -210,11 +210,12 @@
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
                         }
+                        let breed_link = data[i].breedLink;
                         let name = data[i].name.replace("/", "<br>");
                         let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
                         tableContent += '<tr class="' + genderClass + '">';
                         tableContent += '<td>' + data[i].type + '</td>';
-                        tableContent += '<td><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                        tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
                         tableContent += '<td>' + data[i].sex + '</td>';
                         tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
                         tableContent += '</tr>';
