@@ -547,10 +547,8 @@
 
             if (isColumnVisible) {
                 $(`th[data-column="${columnName}"]`).show();
-                $(`td[data-column="${columnName}"]`).show();
             } else {
                 $(`th[data-column="${columnName}"]`).hide();
-                $(`td[data-column="${columnName}"]`).hide();
             }
         });
 
@@ -772,10 +770,8 @@
 
         if (isColumnVisible) {
             $(`th[data-column="${columnName}"]`).show();
-            $(`td[data-column="${columnName}"]`).show();
         } else {
             $(`th[data-column="${columnName}"]`).hide();
-            $(`td[data-column="${columnName}"]`).hide();
         }
         loadData(SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows);
     });
