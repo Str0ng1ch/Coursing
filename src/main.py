@@ -100,7 +100,7 @@ def get_data():
     base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-                                    GROUP BY Type, Sex, Nickname
+                                    GROUP BY Type, Sex, Nickname, breedarchive_link
                                     ) AS sub"""
     conditions = []
     params = []
@@ -253,7 +253,8 @@ def add_data_from_excel():
         values_list = df.apply(lambda row: (
             row['Дата'], row['Место'], row['Класс'], row['Пол'], row['Кличка'], row['Всего мест'],
             row['Очки'], row['Ссылка на источник'], row['Ссылка на Breed Archive']
-        ), axis=1).tolist()
+        ), axis=1)
+        values_list = values_list.apply(lambda tpl: tuple('' if pd.isna(val) else val for val in tpl)).tolist()
 
         query = (f"INSERT INTO {DATABASE}.{TABLE} "
                  f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link)"
