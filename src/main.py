@@ -3,11 +3,11 @@ import io
 import subprocess
 from functools import wraps
 
-import mysql.connector
 import pandas as pd
 from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, session
 from flask_mysqldb import MySQL
 from openpyxl import Workbook
+import requests
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -447,6 +447,48 @@ def update_data():
         return jsonify(), 500
     finally:
         cur.close()
+
+
+def check_url_status(url):
+    try:
+        response = requests.get(url)
+        return response.status_code
+    except requests.exceptions.RequestException:
+        return None
+
+
+def check():
+    cursor = mysql.connection.cursor()
+    cursor.execute(f"SELECT * FROM {DATABASE}.{TABLE}")
+
+    column_names = [desc[0] for desc in cursor.description]
+    dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
+
+    print(column_names)
+    mask = ~dataset['Sex'].isin(['Кобель', 'Сука'])
+    result = dataset[mask]
+    print(result['ID'].to_list())
+
+    mask = ~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])
+    result = dataset[mask]
+    print(result['ID'].to_list())
+
+    mask = dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1
+    result = dataset[mask]
+    print(result['ID'].to_list())
+
+    unique_links = dataset['link'].unique()
+    link_status_dict = {link: check_url_status(link) for link in unique_links}
+    dataset['Link_status'] = dataset['link'].map(link_status_dict)
+    dataset['breedarchive_link_status'] = dataset['breedarchive_link'].apply(check_url_status)
+
+    non_working_links = dataset[(dataset['Link_status'] != 200)]
+    print(non_working_links['ID'].to_list())
+
+    non_working_breedLinks = dataset[(dataset['breedarchive_link_status'] != 200)]
+    print(non_working_breedLinks['ID'].to_list())
+
+    dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
 
 
 error_handlers = {
