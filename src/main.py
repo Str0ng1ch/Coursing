@@ -90,9 +90,10 @@ def get_score_details():
 
 @app.route('/get-data', methods=['POST'])
 def get_data():
+    selected_rating = request.json['selectedRating']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
-    selected_rating = request.json['selectedRating']
+    selected_score = request.json['selectedScore']
     selected_type = request.json['selectedType']
     all_rows = request.json.get('allRows', False)
 
@@ -114,10 +115,10 @@ def get_data():
     if name_search:
         conditions.append("Nickname LIKE %s")
         params.append("%" + name_search + "%")
-    if selected_rating != "all":
-        rating_range = selected_rating.split('-')
+    if selected_score != "all":
+        score_range = selected_score.split('-')
         conditions.append("TotalScore BETWEEN %s AND %s")
-        params.extend([rating_range[0], rating_range[1]])
+        params.extend([score_range[0], score_range[1]])
 
     if conditions:
         query = base_query + " WHERE " + " AND ".join(conditions)
@@ -137,11 +138,11 @@ def get_data():
 
 @app.route('/get-all-data', methods=['POST'])
 def get_all_data():
+    selected_date = request.json['selectedDate']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
     selected_rating = request.json['selectedRating']
     selected_type = request.json['selectedType']
-    # selected_date = request.json['selectedDate']
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
@@ -162,19 +163,24 @@ def get_all_data():
         rating_range = selected_rating.split('-')
         conditions.append("Score BETWEEN %s AND %s")
         params.extend([rating_range[0], rating_range[1]])
+    if selected_date != "":
+        conditions.append("Date=%s")
+        params.append(selected_date)
 
     if conditions:
         query = base_query + " WHERE " + " AND ".join(conditions)
     else:
         query = base_query
 
-    query += " ORDER BY Score DESC, Nickname ASC"
+    query += " ORDER BY Date DESC, Nickname ASC"
     if not all_rows:
         query += " LIMIT 9"
+
     cur.execute(query, params)
     rows = cur.fetchall()
     data = [{"id": row[0], "date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
              "max_position": row[6], "score": row[7], "link": row[8], "breedLink": row[9]} for row in rows]
+
     return jsonify(data)
 
 
@@ -382,7 +388,6 @@ def add_data():
 
 @app.route("/update-data", methods=["POST"])
 def update_data():
-    message = None
     updated_data = request.json
     row_id = updated_data['id']
     date = updated_data['date'].split('.')
@@ -393,60 +398,53 @@ def update_data():
     max_position = updated_data['max_position']
     score = updated_data['score']
     link = updated_data['link']
+    breed_link = updated_data['BreedLink']
 
     formatted_date = f"{date[2]}-{date[1]}-{date[0]}"
     cur = mysql.connection.cursor()
     try:
         update_query = f"""
-        UPDATE {DATABASE}.{TABLE}
-        SET
-          Date = %s,
-          Position = %s,
-          Type = %s,
-          Sex = %s,
-          Nickname = %s,
-          max_position = %s,
-          Score = %s,
-          link = %s
-        WHERE
-          ID = %s
-        """
+            UPDATE {DATABASE}.{TABLE}
+            SET
+              Date = %s,
+              Position = %s,
+              Type = %s,
+              Sex = %s,
+              Nickname = %s,
+              max_position = %s,
+              Score = %s,
+              link = %s,
+              breedarchive_link = %s
+            WHERE
+              ID = %s
+            """
         cur.execute(update_query,
-                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, row_id))
+                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, row_id))
+
+        if breed_link == '':
+            query = f"""
+                SELECT breedarchive_link FROM {DATABASE}.{TABLE}
+                WHERE breedarchive_link != '' AND Nickname = "{nickname}"
+                """
+            cur.execute(query)
+            breed_link = cur.fetchone()
+            breed_link = '' if breed_link is None else breed_link[0]
+
+        if breed_link != '':
+            update_query = f"""
+                UPDATE {DATABASE}.{TABLE}
+                SET
+                  breedarchive_link = %s
+                WHERE
+                  Nickname = %s
+                """
+            cur.execute(update_query, (breed_link, nickname))
+
         mysql.connection.commit()
-        message = "Данные успешно изменены в таблице!"
-        return jsonify({"message": message})
-    except Exception as e:
+        return jsonify()
+    except Exception:
         mysql.connection.rollback()
-        message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
-        return jsonify({"error": message}), 500
-    finally:
-        cur.close()
-
-
-@app.route("/update-nickname", methods=["POST"])
-def update_nickname():
-    message = None
-    updated_data = request.json
-    nickname = '/'.join(updated_data['nickname'].split('\n'))
-    link = updated_data['link']
-
-    cur = mysql.connection.cursor()
-    try:
-        update_query = f"""
-        UPDATE {DATABASE}.{TABLE}
-        SET
-          breedarchive_link = %s
-        WHERE REPLACE(Nickname, '/', '') = %s
-        """
-        cur.execute(update_query, (link, nickname))
-        mysql.connection.commit()
-        message = "Данные успешно изменены в таблице!"
-        return jsonify({"message": message})
-    except Exception as e:
-        mysql.connection.rollback()
-        message = f"Ошибка при изменении данных в таблице! \nОшибка: {e}"
-        return jsonify({"error": message}), 500
+        return jsonify(), 500
     finally:
         cur.close()
 

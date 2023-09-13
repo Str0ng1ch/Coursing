@@ -214,7 +214,7 @@
             </th>
             <th>
                 <input type="checkbox" id="columnPosition" class="column-checkbox">
-                <label for="columnPosition">Позиция</label>
+                <label for="columnPosition">Позиция в соревновании</label>
             </th>
             <th>
                 <input type="checkbox" id="columnType" class="column-checkbox" checked>
@@ -230,17 +230,20 @@
             </th>
             <th>
                 <input type="checkbox" id="columnMaxPosition" class="column-checkbox">
-                <label for="columnMaxPosition">Максимальная позиция</label>
+                <label for="columnMaxPosition">Всего участников</label>
             </th>
             <th>
                 <input type="checkbox" id="columnScore" class="column-checkbox">
                 <label for="columnScore">Баллы</label>
             </th>
             <th>
-                <input type="checkbox" id="columnLink" class="column-checkbox" checked>
+                <input type="checkbox" id="columnLink" class="column-checkbox">
                 <label for="columnLink">Ссылка на источник</label>
             </th>
-
+            <th>
+                <input type="checkbox" id="columnBreedLink" class="column-checkbox">
+                <label for="columnBreedLink">Ссылка на Breed Archive</label>
+            </th>
         </tr>
         </thead>
     </table>
@@ -257,11 +260,12 @@
                 <th data-column="columnDate">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                         Дата
+                        <input type="date" class="form-control" id="dateSelection" name="dateSelection">
                     </div>
                 </th>
                 <th data-column="columnPosition">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                        Позиция
+                        Позиция в соревновании
                     </div>
                 </th>
                 <th data-column="columnType">
@@ -293,7 +297,7 @@
                 </th>
                 <th data-column="columnMaxPosition">
                     <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                        Максимальная позиция
+                        Всего участников
                     </div>
                 </th>
                 <th data-column="columnScore">
@@ -307,6 +311,11 @@
                 <th data-column="columnLink">
                     <div class="d-flex align-items-center">
                         Ссылка на источник
+                    </div>
+                </th>
+                <th data-column="columnBreedLink">
+                    <div class="d-flex align-items-center">
+                        Ссылка на Breed Archive
                     </div>
                 </th>
             </tr>
@@ -323,39 +332,6 @@
     <div class="text-center">
         <button class="btn btn-primary mt-3" id="showAllButton">Показать больше</button>
         <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
-    </div>
-
-    <br>
-
-    <div class="container mt-5">
-        <table class="table table-bordered">
-            <thead>
-            <tr class="table-header">
-                <th>
-                    <div class="d-flex align-items-center">
-                        Кличка
-                        <input type="text" class="form-control ml-2" id="nameSearch2" placeholder="Поиск...">
-                    </div>
-                </th>
-                <th>
-                    <div class="d-flex align-items-center">
-                        Ссылка на Breed Archive
-                    </div>
-                </th>
-            </tr>
-            </thead>
-            <tbody id="dogNickname">
-            </tbody>
-        </table>
-        <div id="noResultsMessage2" class="text-center mt-3" style="display: none;">
-            Ничего не найдено. <br>
-            Попробуйте написать имя на другом языке или поставить другие параметры.
-        </div>
-    </div>
-
-    <div class="text-center">
-        <button class="btn btn-primary mt-3" id="showAllButton2">Показать больше</button>
-        <button class="btn btn-secondary mt-3 ml-2" id="showLessButton2">Показать меньше</button>
     </div>
 
     <br>
@@ -440,7 +416,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     var count = 0;
-    var SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
+    var SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
 
 
     document.addEventListener("DOMContentLoaded", function () {
@@ -488,39 +464,11 @@
             max_position: row.find("td:eq(6)").text(),
             score: row.find("td:eq(7)").text(),
             link: row.find("td:eq(8)").text(),
+            BreedLink: row.find("td:eq(9)").text(),
         };
 
         $.ajax({
             url: "/update-data",
-            type: "POST",
-            data: JSON.stringify(updatedData),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (response) {
-                cell.addClass("bg-success");
-                setTimeout(function () {
-                    cell.removeClass("bg-success");
-                }, 1500);
-            },
-            error: function (error) {
-                cell.addClass("bg-danger");
-                setTimeout(function () {
-                    cell.removeClass("bg-danger");
-                }, 1500);
-            },
-        });
-    });
-
-    $("#dogNickname").on("blur", "td[contenteditable='true']", function () {
-        const cell = $(this);
-        const row = $(this).closest("tr");
-        const updatedData = {
-            nickname: row.find("td:eq(0)").text(),
-            link: row.find("td:eq(1)").text(),
-        };
-
-        $.ajax({
-            url: "/update-nickname",
             type: "POST",
             data: JSON.stringify(updatedData),
             contentType: "application/json; charset=utf-8",
@@ -554,14 +502,13 @@
 
         let initialSexSelection = $("#sexDropdown").val();
         let initialNameSearch = $("#nameSearch").val();
-        let initialNameSearch2 = $("#nameSearch2").val();
         let initialRatingSelection = $("#ratingDropdown").val();
         let initialType = $("#typeDropdown").val();
-        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, all_rows = false);
-        loadNicknames(initialNameSearch2, all_rows = false);
+        loadData('', initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
     });
 
-    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+    function loadData(selectedDate, selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+        SelectedDate = selectedDate;
         SelectedType = selectedType;
         SelectedSex = selectedSex;
         NameSearch = nameSearch;
@@ -571,6 +518,7 @@
             url: "/get-all-data",
             type: "POST",
             data: JSON.stringify({
+                selectedDate: selectedDate,
                 selectedType: selectedType,
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
@@ -598,16 +546,15 @@
                     let checkboxMaxPosition = document.getElementById("columnMaxPosition");
                     let checkboxScore = document.getElementById("columnScore");
                     let checkboxLink = document.getElementById("columnLink");
+                    let checkboxBreedLink = document.getElementById("columnBreedLink");
 
                     for (let i = 0; i < data.length; i++) {
                         let currentScore = parseInt(data[i].score);
-                        let breed_link = data[i].breedLink;
 
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
                         }
 
-                        let name = data[i].Nickname.replace("/", "<br>");
                         let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
                         let inputDate = new Date(data[i].date);
                         let day = inputDate.getUTCDate().toString().padStart(2, '0');
@@ -641,10 +588,9 @@
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].sex + '</td>';
                         }
                         if (checkboxNickname.checked) {
-                            tableContent += '<td contenteditable="true"><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                            tableContent += '<td contenteditable="true">' + data[i].Nickname + '</td>';
                         } else {
-                            tableContent += '<td contenteditable="true" style="display: none"><a href="https://whippet.breedarchive.com/animal/view/ashoka-tano-d75a8d45-c968-4d26-919e-28a88faffaee" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-
+                            tableContent += '<td contenteditable="true" style="display: none">>' + data[i].Nickname + '</td>';
                         }
                         if (checkboxMaxPosition.checked) {
                             tableContent += '<td contenteditable="true">' + data[i].max_position + '</td>';
@@ -660,7 +606,11 @@
                             tableContent += '<td contenteditable="true">' + data[i].link + '</td>';
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].link + '</td>';
-
+                        }
+                        if (checkboxBreedLink.checked) {
+                            tableContent += '<td contenteditable="true">' + data[i].breedLink + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].breedLink + '</td>';
                         }
                         tableContent += '</tr>';
                     }
@@ -715,55 +665,6 @@
         });
     }
 
-    function loadNicknames(nameSearch, allRows = true) {
-        $.ajax({
-            url: "/get-nicknames",
-            type: "POST",
-            data: JSON.stringify({
-                nameSearch: nameSearch,
-                allRows: allRows
-            }),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (data) {
-                let tableContent = '';
-                if (data.length === 0) {
-                    $("#noResultsMessage2").show();
-                    $("#showAllButton2").hide();
-                    $("#showLessButton2").hide();
-                    $("#dogNickname").html(tableContent);
-                } else {
-                    $("#noResultsMessage2").hide();
-                    for (let i = 0; i < data.length; i++) {
-                        let name = data[i].nickname.replace("/", "<br>");
-                        tableContent += '<tr>';
-                        tableContent += '<td contenteditable="false"><a href="' + data[i].breedLink + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                        tableContent += '<td contenteditable="true">' + data[i].breedLink + '</td>';
-                        tableContent += '</tr>';
-                    }
-
-                    if (allRows) {
-                        $("#showAllButton2").hide();
-                        $("#showLessButton2").show();
-                    } else {
-                        if (data.length === 9) {
-                            tableContent += '<tr><td> ... </td><td> ... </td>';
-                        }
-                        $("#showAllButton2").show();
-                        $("#showLessButton2").hide();
-                    }
-
-                    if (data.length < 9) {
-                        $("#showAllButton2").hide();
-                    }
-
-                    $("#dogNickname").html(tableContent);
-                }
-            }
-        });
-    }
-
-
     $('.column-checkbox').change(function () {
         let columnName = $(this).attr('id');
         let isColumnVisible = $(this).is(':checked');
@@ -773,7 +674,7 @@
         } else {
             $(`th[data-column="${columnName}"]`).hide();
         }
-        loadData(SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows);
+        loadData(SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows);
     });
 
     function updateData(allRows) {
@@ -781,20 +682,12 @@
         let selectedSex = $("#sexDropdown").val();
         let nameSearch = $("#nameSearch").val();
         let selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
-    }
-
-    function updateNickname(allRows) {
-        let nameSearch = $("#nameSearch2").val();
-        loadNicknames(nameSearch, allRows)
+        let selectedDate = $("#dateSelection").val();
+        loadData(selectedDate, selectedType, selectedSex, nameSearch, selectedRating, allRows);
     }
 
     $("#nameSearch").on('input', function () {
         updateData(false);
-    });
-
-    $("#nameSearch2").on('input', function () {
-        updateNickname(false);
     });
 
     $("#sexDropdown").change(function () {
@@ -813,16 +706,12 @@
         updateData(true);
     });
 
-    $("#showAllButton2").click(function () {
-        updateNickname(true);
-    });
-
     $("#showLessButton").click(function () {
         updateData(false);
     });
 
-    $("#showLessButton2").click(function () {
-        updateNickname(false);
+    $("#dateSelection").on("change", function() {
+        updateData(false);
     });
 </script>
 </body>

@@ -57,6 +57,15 @@
         <tr class="table-header">
             <th>
                 <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    Рейтинг
+                    <select class="form-control ml-2" id="ratingDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="0-9">0-9</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
                     Класс
                     <select class="form-control ml-2" id="typeDropdown">
                         <option value="all" selected>Все</option>
@@ -85,7 +94,7 @@
             <th>
                 <div class="d-flex align-items-center">
                     Баллы
-                    <select class="form-control ml-2" id="ratingDropdown">
+                    <select class="form-control ml-2" id="scoreDropdown">
                         <option value="all" selected>Все</option>
                     </select>
                 </div>
@@ -139,6 +148,7 @@
 </div>
 
 <div id="maxScoreHolder" style="display: none;">0</div>
+<div id="maxRatingHolder" style="display: none;">0</div>
 
 <footer class="footer" id="footer">
     <div class="container text-center">
@@ -171,26 +181,40 @@
             dropdownOptions += '<option value="' + i + '-' + (i + step - 1) + '">' + i + '-' + (i + step - 1) + '</option>';
         }
 
+        $("#scoreDropdown").html(dropdownOptions);
+    }
+
+    function updateRatingDropdown(maxRating) {
+        console.log(maxRating)
+        let dropdownOptions = '';
+        const step = 10;
+        dropdownOptions += '<option value="all" selected>Все</option>'
+        for (let i = 0; i <= maxRating; i += step) {
+            dropdownOptions += '<option value="' + i + '-' + (i + step - 1) + '">' + i + '-' + (i + step - 1) + '</option>';
+        }
+
         $("#ratingDropdown").html(dropdownOptions);
     }
 
     $(document).ready(function () {
+        let initialRating = $("#ratingDropdown").val();
         let initialSexSelection = $("#sexDropdown").val();
         let initialNameSearch = $("#nameSearch").val();
-        let initialRatingSelection = $("#ratingDropdown").val();
+        let initialScore = $("#scoreDropdown").val();
         let initialType = $("#typeDropdown").val();
-        loadData(initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
+        loadData(initialRating, initialType, initialSexSelection, initialNameSearch, initialScore, false);
     });
 
-    function loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+    function loadData(selectedRating, selectedType, selectedSex, nameSearch, selectedScore, allRows = false) {
         $.ajax({
             url: "/get-data",
             type: "POST",
             data: JSON.stringify({
+                selectedRating: selectedRating,
                 selectedType: selectedType,
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
-                selectedRating: selectedRating,
+                selectedScore: selectedScore,
                 allRows: allRows
             }),
             contentType: "application/json; charset=utf-8",
@@ -198,6 +222,8 @@
             success: function (data) {
                 let tableContent = '';
                 let maxScore = 0;
+                let maxRating = 0;
+                let selectedRating = document.getElementById("ratingDropdown").value;
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
                     $("#showAllButton").hide();
@@ -210,19 +236,30 @@
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
                         }
+                        if ((i + 1) > maxRating) {
+                            maxRating = (i + 1);
+                        }
                         let breed_link = data[i].breedLink;
                         let name = data[i].name.replace("/", "<br>");
                         let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+
                         tableContent += '<tr class="' + genderClass + '">';
-                        tableContent += '<td>' + data[i].type + '</td>';
-                        tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                        tableContent += '<td>' + data[i].sex + '</td>';
-                        tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
-                        tableContent += '</tr>';
+                        if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
+                            tableContent += '<td>' + (i + 1) + '</td>';
+                            tableContent += '<td>' + data[i].type + '</td>';
+                            tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                            tableContent += '<td>' + data[i].sex + '</td>';
+                            tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                            tableContent += '</tr>';
+                        }
                     }
                     if (maxScore > $("#maxScoreHolder").text()) {
                         updateDropdown(maxScore);
                         $("#maxScoreHolder").text(maxScore);
+                    }
+                    if (maxRating > $("#maxRatingHolder").text()) {
+                        updateRatingDropdown(maxRating);
+                        $("#maxRatingHolder").text(maxRating);
                     }
 
                     if (allRows) {
@@ -271,11 +308,12 @@
     }
 
     function updateData(allRows) {
+        let initialRating = $("#ratingDropdown").val();
         let selectedType = $("#typeDropdown").val();
         let selectedSex = $("#sexDropdown").val();
         let nameSearch = $("#nameSearch").val();
-        let selectedRating = $("#ratingDropdown").val();
-        loadData(selectedType, selectedSex, nameSearch, selectedRating, allRows);
+        let selectedScore = $("#scoreDropdown").val();
+        loadData(initialRating, selectedType, selectedSex, nameSearch, selectedScore, allRows);
     }
 
     $("#nameSearch").on('input', function () {
@@ -283,6 +321,10 @@
     });
 
     $("#sexDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#scoreDropdown").change(function () {
         updateData(false);
     });
 
