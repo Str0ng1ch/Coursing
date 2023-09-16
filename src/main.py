@@ -1,13 +1,16 @@
 import configparser
 import io
 import subprocess
+from datetime import datetime
 from functools import wraps
 
+import Levenshtein
 import pandas as pd
+import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, Response, session
 from flask_mysqldb import MySQL
 from openpyxl import Workbook
-import requests
+from openpyxl.utils import get_column_letter
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
@@ -184,36 +187,6 @@ def get_all_data():
     return jsonify(data)
 
 
-@app.route('/get-nicknames', methods=['POST'])
-def get_nicknames():
-    name_search = request.json['nameSearch']
-    all_rows = request.json.get('allRows', False)
-
-    cur = mysql.connection.cursor()
-    base_query = f"""SELECT DISTINCT(Nickname), breedarchive_link FROM {DATABASE}.{TABLE}"""
-
-    conditions = []
-    params = []
-
-    if name_search:
-        conditions.append("Nickname LIKE %s")
-        params.append("%" + name_search + "%")
-
-    if conditions:
-        query = base_query + " WHERE " + " AND ".join(conditions)
-    else:
-        query = base_query
-
-    query += " ORDER BY Nickname ASC"
-    if not all_rows:
-        query += " LIMIT 9"
-    cur.execute(query, params)
-    rows = cur.fetchall()
-    data = [{"nickname": row[0], "breedLink": row[1]} for row in rows]
-
-    return jsonify(data)
-
-
 def requires_auth(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -264,7 +237,7 @@ def add_data_from_excel():
 
         query = (f"INSERT INTO {DATABASE}.{TABLE} "
                  f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link)"
-                 f" VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)")
+                 f" VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s)")
 
         cursor.executemany(query, values_list)
         mysql.connection.commit()
@@ -306,7 +279,7 @@ def add_data_from_form():
         cur.execute(
             f"INSERT INTO {DATABASE}.{TABLE} "
             f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s)",
             (date, position, dog_type, sex, nickname, max_position, score, link, breed_link))
         mysql.connection.commit()
         message = "Данные успешно внесены из формы!"
@@ -327,12 +300,23 @@ def download_excel(cursor, full=True):
                     'Всего мест', 'Очки', 'Ссылка на источник', 'Ссылка на Breed Archive']
 
     wb = Workbook()
-    ws = wb.active
+    sheet = wb.active
 
-    ws.append(column_names)
+    sheet.append(column_names)
     if full:
         for row in result:
-            ws.append(row)
+            sheet.append(row)
+
+    for column in sheet.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            if isinstance(cell.value, datetime):
+                max_length = max(max_length, len(cell.value.strftime("%Y-%m-%d")))
+            else:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = (max_length + 2)
+        sheet.column_dimensions[column_letter].width = adjusted_width
 
     excel_data = io.BytesIO()
     wb.save(excel_data)
@@ -410,7 +394,7 @@ def update_data():
               Position = %s,
               Type = %s,
               Sex = %s,
-              Nickname = %s,
+              Nickname = UPPER(%s),
               max_position = %s,
               Score = %s,
               link = %s,
@@ -457,38 +441,113 @@ def check_url_status(url):
         return None
 
 
-def check():
+def find_similar_pairs_with_distance(values_list, min_distance, max_distance):
+    similar_pairs = []
+    for i in range(len(values_list)):
+        for j in range(i + 1, len(values_list)):
+            distance = Levenshtein.distance(values_list[i], values_list[j])
+            if min_distance <= distance <= max_distance:
+                similar_pairs.append((values_list[i], values_list[j], distance))
+
+    return similar_pairs
+
+
+@app.route("/ignore-data", methods=["POST"])
+def ignore_data():
+    errors = {
+        "Неправильно указан пол": 1,
+        'Неправильно указан класс': 2,
+        'Неправильно посчитаны очки': 3,
+        'Недействительная ссылка на результаты соревнований': 4,
+        'Недействительная ссылка на BreedArchive': 5,
+        'Недействительная дата': 6,
+        'Позиция больше количества участников': 7,
+        'Количество очков меньше 0': 8
+    }
+    row_id = request.json['id']
+    error = request.json['error']
+    cursor = mysql.connection.cursor()
+
+    try:
+        query = f"UPDATE {DATABASE}.{TABLE} SET ignored = {errors.get(error)} WHERE ID = {row_id}"
+        cursor.execute(query)
+        mysql.connection.commit()
+        return jsonify()
+    except Exception:
+        mysql.connection.rollback()
+        return jsonify(), 500
+    finally:
+        cursor.close()
+
+
+@app.route("/check-database", methods=["POST"])
+def check_database():
     cursor = mysql.connection.cursor()
     cursor.execute(f"SELECT * FROM {DATABASE}.{TABLE}")
 
+    ids, errors = [], []
     column_names = [desc[0] for desc in cursor.description]
     dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
 
     print(column_names)
     mask = ~dataset['Sex'].isin(['Кобель', 'Сука'])
     result = dataset[mask]
-    print(result['ID'].to_list())
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Неправильно указан пол'] * len(result['ID'].to_list()))
 
     mask = ~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])
     result = dataset[mask]
-    print(result['ID'].to_list())
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Неправильно указан класс'] * len(result['ID'].to_list()))
 
     mask = dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1
     result = dataset[mask]
-    print(result['ID'].to_list())
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
 
     unique_links = dataset['link'].unique()
     link_status_dict = {link: check_url_status(link) for link in unique_links}
     dataset['Link_status'] = dataset['link'].map(link_status_dict)
     dataset['breedarchive_link_status'] = dataset['breedarchive_link'].apply(check_url_status)
 
-    non_working_links = dataset[(dataset['Link_status'] != 200)]
-    print(non_working_links['ID'].to_list())
+    result = dataset[(dataset['Link_status'] != 200)]
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
 
-    non_working_breedLinks = dataset[(dataset['breedarchive_link_status'] != 200)]
-    print(non_working_breedLinks['ID'].to_list())
+    result = dataset[(dataset['breedarchive_link_status'] != 200) & (dataset['ignored'] != 5)]
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
     dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
+    print(find_similar_pairs_with_distance(dataset['Part1'], 1, 4))
+    print(find_similar_pairs_with_distance(dataset['Part2'], 1, 4))
+
+    print(dataset)
+    dataset1 = dataset[dataset['Part1'] != '']
+    duplicates = dataset1[dataset1.duplicated(subset='Part1', keep=False)]
+    print(duplicates)
+
+    result = pd.merge(duplicates, dataset1, on='Part1', how='left')
+    print(result)
+
+    today = datetime.now().date()
+    mask = (dataset['Date'] <= today) | (dataset.groupby('Date')['Date'].transform('count') <= 5)
+    result = dataset.loc[~mask]
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Недействительная дата'] * len(result['ID'].to_list()))
+
+    mask = dataset['Position'] > dataset['Max_position']
+    result = dataset[mask]
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Позиция больше количества участников'] * len(result['ID'].to_list()))
+
+    mask = dataset['Score'] < 0
+    result = dataset[mask]
+    ids.extend(result['ID'].to_list())
+    errors.extend(['Количество очков меньше 0'] * len(result['ID'].to_list()))
+
+    return jsonify([{"id": row[0], "error": row[1]} for row in zip(ids, errors)])
+    # TODO одна часть ника совпадает вторая нет
 
 
 error_handlers = {

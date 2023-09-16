@@ -2,10 +2,14 @@
 <html lang="ru">
 <head>
     <title>ProCoursing</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="icon" href="../static/images/paw.ico">
     <style>
+        .fa-times {
+            color: red;
+        }
         .female-row {
             background-color: rgba(247, 151, 247, 0.2);
         }
@@ -48,6 +52,8 @@
             {{ message }}
         </div>
     {% endif %}
+
+    <a href='#' class="check-database" data-target="#checkDatabase">Проверить</a>
 
     <h1 style="text-align: center">Внести данные</h1>
     <div class="row">
@@ -408,12 +414,47 @@
     </div>
 </div>
 
+<div class="modal fade" id="checkDatabase" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Информация об ошибках</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>ID</th>
+                        <th>Ошибка</th>
+                    </tr>
+                    </thead>
+                    <tbody id="checkDatabaseModalTableBody">
+                    <!-- Сюда будут добавляться данные из базы данных -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
 <script>
     var count = 0;
     var SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
@@ -647,6 +688,7 @@
                         contentType: "application/json; charset=utf-8",
                         dataType: "json",
                         success: function (scoreDetails) {
+                            console.log(scoreDetails)
                             let modalTableContent = '';
                             for (let i = 0; i < scoreDetails.length; i++) {
                                 let inputDate = new Date(scoreDetails[i][0]);
@@ -656,6 +698,7 @@
                                 let formattedDate = `${day}.${month}.${year}`;
                                 modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Источник</a></td></tr>';
                             }
+                            console.log(modalTableContent);
                             $("#modalTableBody").html(modalTableContent);
                             $("#infoModal").modal('show');
                         }
@@ -664,6 +707,55 @@
             }
         });
     }
+
+    $("#checkDatabaseModalTableBody").on("click", ".delete-row", function () {
+        let row = $(this).closest('tr');
+        let id = $(this).data('id');
+        let error = $(this).data('error');
+        let updatedData = { id: id, error: error };
+
+        $.ajax({
+            url: "/ignore-data",
+            type: "POST",
+            data: JSON.stringify(updatedData),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (response) {
+                row.remove();
+            },
+            error: function (error) {
+                row.addClass("bg-danger");
+            setTimeout(function () {
+                row.removeClass("bg-danger");
+            }, 1500);
+            },
+        });
+    });
+
+
+    $(".check-database").click(function () {
+        let score = $(this).data('score');
+        $.ajax({
+            url: "/check-database",
+            type: "POST",
+            data: JSON.stringify({score: score}),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                let modalTableContent = '';
+                for (let i = 0; i < data.length; i++) {
+                    modalTableContent += '<tr>'
+                    modalTableContent += '<td> <a class="delete-row" data-error="' + data[i].error + '" data-id="' + data[i].id + '"> <i class="fas fa-times"></i> </a></td>';
+                    modalTableContent += '<td>' + data[i].id + '</td>';
+                    modalTableContent += '<td>' + data[i].error + '</td>';
+                    modalTableContent += '</tr>'
+                }
+                console.log(modalTableContent);
+                $("#checkDatabaseModalTableBody").html(modalTableContent);
+                $("#checkDatabase").modal('show');
+            }
+        });
+    });
 
     $('.column-checkbox').change(function () {
         let columnName = $(this).attr('id');
