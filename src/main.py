@@ -267,15 +267,26 @@ def run_script():
 
 def autofill_data():
     message = None
-    cur = mysql.connection.cursor()
+    cursor = mysql.connection.cursor()
     try:
+        query = f"""UPDATE {DATABASE}.{TABLE} AS t1
+            JOIN (
+                SELECT Nickname, MAX(breedarchive_link) AS breedarchive_link
+                FROM {DATABASE}.{TABLE}
+                WHERE breedarchive_link IS NOT NULL
+                GROUP BY Nickname
+                HAVING COUNT(Nickname) > 1
+            ) AS t2 ON t1.Nickname = t2.Nickname
+            SET t1.breedarchive_link = t2.breedarchive_link;
+            """
+        cursor.execute(query)
         mysql.connection.commit()
         message = f"Данные успешно заполнены"
     except Exception as e:
         mysql.connection.rollback()
         message = f"Ошибка при заполнении данных. \nОшибка: {e}"
     finally:
-        cur.close()
+        cursor.close()
         return message
 
 
@@ -440,26 +451,6 @@ def update_data():
             """
         cur.execute(update_query,
                     (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, row_id))
-
-        if breed_link == '':
-            query = f"""
-                SELECT breedarchive_link FROM {DATABASE}.{TABLE}
-                WHERE breedarchive_link != '' AND Nickname = "{nickname}"
-                """
-            cur.execute(query)
-            breed_link = cur.fetchone()
-            breed_link = '' if breed_link is None else breed_link[0]
-
-        if breed_link != '':
-            update_query = f"""
-                UPDATE {DATABASE}.{TABLE}
-                SET
-                  breedarchive_link = %s
-                WHERE
-                  Nickname = %s
-                """
-            cur.execute(update_query, (breed_link, nickname))
-
         mysql.connection.commit()
         return jsonify()
     except Exception:
@@ -543,7 +534,10 @@ def check_database():
     unique_links = dataset['link'].unique()
     link_status_dict = {link: check_url_status(link) for link in unique_links}
     dataset['Link_status'] = dataset['link'].map(link_status_dict)
-    dataset['breedarchive_link_status'] = dataset['breedarchive_link'].apply(check_url_status)
+
+    unique_breed_links = dataset['link'].unique()
+    breed_link_status_dict = {link: check_url_status(link) for link in unique_breed_links}
+    dataset['breedarchive_link_status'] = dataset['breedarchive_link'].map(breed_link_status_dict)
 
     result = dataset[(dataset['Link_status'] != 200) & (dataset['ignored'] != 4)]
     ids.extend(result['ID'].to_list())
