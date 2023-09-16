@@ -93,7 +93,6 @@ def get_score_details():
 
 @app.route('/get-data', methods=['POST'])
 def get_data():
-    selected_rating = request.json['selectedRating']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
     selected_score = request.json['selectedScore']
@@ -141,6 +140,7 @@ def get_data():
 
 @app.route('/get-all-data', methods=['POST'])
 def get_all_data():
+    selected_id = request.json['selectedID']
     selected_date = request.json['selectedDate']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
@@ -169,6 +169,9 @@ def get_all_data():
     if selected_date != "":
         conditions.append("Date=%s")
         params.append(selected_date)
+    if selected_id != '':
+        conditions.append("ID LIKE %s")
+        params.append("%" + selected_id + "%")
 
     if conditions:
         query = base_query + " WHERE " + " AND ".join(conditions)
@@ -262,6 +265,35 @@ def run_script():
         return message
 
 
+def autofill_data():
+    message = None
+    cur = mysql.connection.cursor()
+    try:
+        mysql.connection.commit()
+        message = f"Данные успешно заполнены"
+    except Exception as e:
+        mysql.connection.rollback()
+        message = f"Ошибка при заполнении данных. \nОшибка: {e}"
+    finally:
+        cur.close()
+        return message
+
+
+def reset_ignored():
+    message = None
+    cursor = mysql.connection.cursor()
+    try:
+        cursor.execute(f"UPDATE {DATABASE}.{TABLE} SET ignored = 0")
+        mysql.connection.commit()
+        message = "Ошибки успешно сброшены"
+    except Exception as e:
+        mysql.connection.rollback()
+        message = f"Ошибка при сбросе ошибок. \nОшибка: {e}"
+    finally:
+        cursor.close()
+        return message
+
+
 def add_data_from_form():
     message = None
     date = request.form['date']
@@ -336,6 +368,10 @@ def add_data():
             message = add_data_from_excel()
         elif 'run_script' in request.form:
             message = run_script()
+        elif 'reset_ignored' in request.form:
+            message = reset_ignored()
+        elif 'autofill_data' in request.form:
+            message = autofill_data()
         else:
             message = add_data_from_form()
         session['message'] = message
@@ -489,18 +525,17 @@ def check_database():
     column_names = [desc[0] for desc in cursor.description]
     dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
 
-    print(column_names)
-    mask = ~dataset['Sex'].isin(['Кобель', 'Сука'])
+    mask = (~dataset['Sex'].isin(['Кобель', 'Сука'])) & (dataset['ignored'] != 1)
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан пол'] * len(result['ID'].to_list()))
 
-    mask = ~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])
+    mask = (~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])) & (dataset['ignored'] != 2)
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан класс'] * len(result['ID'].to_list()))
 
-    mask = dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1
+    mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & (dataset['ignored'] != 3)
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
@@ -510,7 +545,7 @@ def check_database():
     dataset['Link_status'] = dataset['link'].map(link_status_dict)
     dataset['breedarchive_link_status'] = dataset['breedarchive_link'].apply(check_url_status)
 
-    result = dataset[(dataset['Link_status'] != 200)]
+    result = dataset[(dataset['Link_status'] != 200) & (dataset['ignored'] != 4)]
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
 
@@ -518,30 +553,29 @@ def check_database():
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
-    dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
-    print(find_similar_pairs_with_distance(dataset['Part1'], 1, 4))
-    print(find_similar_pairs_with_distance(dataset['Part2'], 1, 4))
-
-    print(dataset)
-    dataset1 = dataset[dataset['Part1'] != '']
-    duplicates = dataset1[dataset1.duplicated(subset='Part1', keep=False)]
-    print(duplicates)
-
-    result = pd.merge(duplicates, dataset1, on='Part1', how='left')
-    print(result)
+    # dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
+    # print(find_similar_pairs_with_distance(dataset['Part1'], 1, 4))
+    # print(find_similar_pairs_with_distance(dataset['Part2'], 1, 4))
+    #
+    # dataset1 = dataset[dataset['Part1'] != '']
+    # duplicates = dataset1[dataset1.duplicated(subset='Part1', keep=False)]
+    # print(duplicates)
+    #
+    # result = pd.merge(duplicates, dataset1, on='Part1', how='left')
+    # print(result)
 
     today = datetime.now().date()
-    mask = (dataset['Date'] <= today) | (dataset.groupby('Date')['Date'].transform('count') <= 5)
-    result = dataset.loc[~mask]
+    mask = (dataset['Date'] <= today)
+    result = dataset.loc[(~mask) & (dataset['ignored'] != 6)]
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная дата'] * len(result['ID'].to_list()))
 
-    mask = dataset['Position'] > dataset['Max_position']
+    mask = (dataset['Position'] > dataset['Max_position']) & (dataset['ignored'] != 7)
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Позиция больше количества участников'] * len(result['ID'].to_list()))
 
-    mask = dataset['Score'] < 0
+    mask = (dataset['Score'] < 0) & (dataset['ignored'] != 8)
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Количество очков меньше 0'] * len(result['ID'].to_list()))

@@ -86,8 +86,9 @@ def insert_into_database(all_dogs):
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    insert_query = f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, " \
-                   "Nickname, max_position, score, link, breedarchive_link, ignored) VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)"
+    insert_query = (f"INSERT INTO {DATABASE}.{TABLE} "
+                    f"(Date, Position, Type, Sex, Nickname, max_position, score, link, breedarchive_link, ignored) "
+                    f"VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)")
     for row in all_dogs:
         if len(row) == 6:
             cursor.execute(insert_query, [date] + row + [url] + ['', 0])
