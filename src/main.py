@@ -294,7 +294,7 @@ def reset_ignored():
     message = None
     cursor = mysql.connection.cursor()
     try:
-        cursor.execute(f"UPDATE {DATABASE}.{TABLE} SET ignored = 0")
+        cursor.execute(f"UPDATE {DATABASE}.{TABLE} SET ignored = ''")
         mysql.connection.commit()
         message = "Ошибки успешно сброшены"
     except Exception as e:
@@ -416,8 +416,8 @@ def add_data():
 
     return render_template('add_data.html', message=message)
 
-
 @app.route("/update-data", methods=["POST"])
+@requires_auth
 def update_data():
     updated_data = request.json
     row_id = updated_data['id']
@@ -474,40 +474,12 @@ def find_similar_pairs_with_distance(values_list, min_distance, max_distance):
         for j in range(i + 1, len(values_list)):
             distance = Levenshtein.distance(values_list[i], values_list[j])
             if min_distance <= distance <= max_distance:
-                similar_pairs.append((values_list[i], values_list[j], distance))
+                similar_pairs.append((values_list[i], values_list[j]))
 
     return similar_pairs
 
-
-@app.route("/ignore-data", methods=["POST"])
-def ignore_data():
-    errors = {
-        "Неправильно указан пол": 1,
-        'Неправильно указан класс': 2,
-        'Неправильно посчитаны очки': 3,
-        'Недействительная ссылка на результаты соревнований': 4,
-        'Недействительная ссылка на BreedArchive': 5,
-        'Недействительная дата': 6,
-        'Позиция больше количества участников': 7,
-        'Количество очков меньше 0': 8
-    }
-    row_id = request.json['id']
-    error = request.json['error']
-    cursor = mysql.connection.cursor()
-
-    try:
-        query = f"UPDATE {DATABASE}.{TABLE} SET ignored = {errors.get(error)} WHERE ID = {row_id}"
-        cursor.execute(query)
-        mysql.connection.commit()
-        return jsonify()
-    except Exception:
-        mysql.connection.rollback()
-        return jsonify(), 500
-    finally:
-        cursor.close()
-
-
 @app.route("/check-database", methods=["POST"])
+@requires_auth
 def check_database():
     cursor = mysql.connection.cursor()
     cursor.execute(f"SELECT * FROM {DATABASE}.{TABLE}")
@@ -516,17 +488,17 @@ def check_database():
     column_names = [desc[0] for desc in cursor.description]
     dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
 
-    mask = (~dataset['Sex'].isin(['Кобель', 'Сука'])) & (dataset['ignored'] != 1)
+    mask = (~dataset['Sex'].isin(['Кобель', 'Сука'])) & ~dataset['ignored'].astype(str).str.contains('1')
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан пол'] * len(result['ID'].to_list()))
 
-    mask = (~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])) & (dataset['ignored'] != 2)
+    mask = (~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])) & ~(dataset['ignored'].astype(str).str.contains('2'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан класс'] * len(result['ID'].to_list()))
 
-    mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & (dataset['ignored'] != 3)
+    mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & ~(dataset['ignored'].astype(str).str.contains('3'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
@@ -539,43 +511,115 @@ def check_database():
     breed_link_status_dict = {link: check_url_status(link) for link in unique_breed_links}
     dataset['breedarchive_link_status'] = dataset['breedarchive_link'].map(breed_link_status_dict)
 
-    result = dataset[(dataset['Link_status'] != 200) & (dataset['ignored'] != 4)]
+    result = dataset[(dataset['Link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('4'))]
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
 
-    result = dataset[(dataset['breedarchive_link_status'] != 200) & (dataset['ignored'] != 5)]
+    result = dataset[(dataset['breedarchive_link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('5'))]
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
-    # dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
-    # print(find_similar_pairs_with_distance(dataset['Part1'], 1, 4))
-    # print(find_similar_pairs_with_distance(dataset['Part2'], 1, 4))
-    #
-    # dataset1 = dataset[dataset['Part1'] != '']
-    # duplicates = dataset1[dataset1.duplicated(subset='Part1', keep=False)]
-    # print(duplicates)
-    #
-    # result = pd.merge(duplicates, dataset1, on='Part1', how='left')
-    # print(result)
+    dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
+    similar_pairs = find_similar_pairs_with_distance(dataset['Part1'], 1, 4)
+    for i in range(len(similar_pairs)):
+        first_name, second_name = similar_pairs[i]
+        result = dataset[(dataset['Part1'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
+        result = dataset[(dataset['Part1'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
+
+    similar_pairs = find_similar_pairs_with_distance(dataset['Part2'], 1, 4)
+    for i in range(len(similar_pairs)):
+        first_name, second_name = similar_pairs[i]
+        result = dataset[(dataset['Part2'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
+        result = dataset[(dataset['Part2'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
+
+    grouped = dataset[dataset['Part2'] != ''].groupby('Part2')['ID'].unique().reset_index()
+    for row in grouped[grouped['ID'].apply(len) >= 2].values:
+        subset = dataset[dataset['ID'].isin(row[1])]
+        if subset['Part1'].nunique() != 1:
+            for row_id in row[1]:
+                result = dataset[(dataset['ID'] == row_id) & (~dataset['ignored'].astype(str).str.contains('&'))]
+                print(result)
+                print(dataset[(dataset['ID'] == row_id)])
+                print(result['ID'].to_list())
+                ids.extend(result['ID'].to_list())
+                errors.extend([f'Не совпадает английское написание имени среди собак с такой же русском кличкой'] * len(result['ID'].to_list()))
+
+    grouped = dataset[dataset['Part1'] != ''].groupby('Part1')['ID'].unique().reset_index()
+    for row in grouped[grouped['ID'].apply(len) >= 2].values:
+        subset = dataset[dataset['ID'].isin(row[1])]
+        if subset['Part2'].nunique() != 1:
+            for row_id in row[1]:
+                result = dataset[(dataset['ID'] == row_id) & ~(dataset['ignored'].astype(str).str.contains('%'))]
+                ids.extend(result['ID'].to_list())
+                errors.extend([f'Не совпадает русское написание имени среди собак с такой же английской кличкой'] * len(result['ID'].to_list()))
+
+    result = dataset[(dataset['Part1'] == "") & ~(dataset['ignored'].astype(str).str.contains('9'))]
+    ids.extend(result['ID'].to_list())
+    errors.extend(["Не заполнена английская часть клички"] * len(result['ID'].to_list()))
+
+    result = dataset[(dataset['Part2'] == "") & ~(dataset['ignored'].astype(str).str.contains('!'))]
+    ids.extend(result['ID'].to_list())
+    errors.extend(["Не заполнена русская часть клички"] * len(result['ID'].to_list()))
 
     today = datetime.now().date()
     mask = (dataset['Date'] <= today)
-    result = dataset.loc[(~mask) & (dataset['ignored'] != 6)]
+    result = dataset.loc[(~mask) & ~(dataset['ignored'].astype(str).str.contains('6'))]
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная дата'] * len(result['ID'].to_list()))
 
-    mask = (dataset['Position'] > dataset['Max_position']) & (dataset['ignored'] != 7)
+    mask = (dataset['Position'] > dataset['Max_position']) & ~(dataset['ignored'].astype(str).str.contains('7'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Позиция больше количества участников'] * len(result['ID'].to_list()))
 
-    mask = (dataset['Score'] < 0) & (dataset['ignored'] != 8)
+    mask = (dataset['Score'] < 0) & ~(dataset['ignored'].astype(str).str.contains('8'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Количество очков меньше 0'] * len(result['ID'].to_list()))
 
     return jsonify([{"id": row[0], "error": row[1]} for row in zip(ids, errors)])
-    # TODO одна часть ника совпадает вторая нет
+
+
+@app.route("/ignore-data", methods=["POST"])
+def ignore_data():
+    errors = {
+        "Неправильно указан пол": '1',
+        'Неправильно указан класс': '2',
+        'Неправильно посчитаны очки': '3',
+        'Недействительная ссылка на результаты соревнований': '4',
+        'Недействительная ссылка на BreedArchive': '5',
+        'Недействительная дата': '6',
+        'Позиция больше количества участников': '7',
+        'Количество очков меньше 0': '8',
+        'Не заполнена английская часть клички': '9',
+        'Не заполнена русская часть клички': '!',
+        'Возможна опечатка в английском имени': '@',
+        'Возможна опечатка в русском имени': '#',
+        'Не совпадает английское написание имени среди собак с такой же русском кличкой': '&',
+        'Не совпадает русское написание имени среди собак с такой же английской кличкой': '%',
+    }
+    row_id = request.json['id']
+    error = request.json['error']
+    cursor = mysql.connection.cursor()
+
+    try:
+        query = f"UPDATE {DATABASE}.{TABLE} SET ignored = CONCAT(ignored, '{errors[error]}') WHERE ID = {row_id}"
+        cursor.execute(query)
+        mysql.connection.commit()
+        return jsonify()
+    except Exception:
+        mysql.connection.rollback()
+        return jsonify(), 500
+    finally:
+        cursor.close()
 
 
 error_handlers = {

@@ -91,7 +91,7 @@ def insert_into_database(all_dogs):
                     f"VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)")
     for row in all_dogs:
         if len(row) == 6:
-            cursor.execute(insert_query, [date] + row + [url] + ['', 0])
+            cursor.execute(insert_query, [date] + row + [url] + ['', ''])
 
     connection.commit()
     cursor.close()
