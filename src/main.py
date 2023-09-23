@@ -519,55 +519,59 @@ def check_database():
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
-    dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
-    similar_pairs = find_similar_pairs_with_distance(dataset['Part1'], 1, 4)
-    for i in range(len(similar_pairs)):
-        first_name, second_name = similar_pairs[i]
-        result = dataset[(dataset['Part1'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
-        ids.extend(result['ID'].to_list())
-        errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
-        result = dataset[(dataset['Part1'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
-        ids.extend(result['ID'].to_list())
-        errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
-
-    similar_pairs = find_similar_pairs_with_distance(dataset['Part2'], 1, 4)
-    for i in range(len(similar_pairs)):
-        first_name, second_name = similar_pairs[i]
-        result = dataset[(dataset['Part2'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
-        ids.extend(result['ID'].to_list())
-        errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
-        result = dataset[(dataset['Part2'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
-        ids.extend(result['ID'].to_list())
-        errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
-
-    grouped = dataset[dataset['Part2'] != ''].groupby('Part2')['ID'].unique().reset_index()
-    for row in grouped[grouped['ID'].apply(len) >= 2].values:
-        subset = dataset[dataset['ID'].isin(row[1])]
-        if subset['Part1'].nunique() != 1:
-            for row_id in row[1]:
-                result = dataset[(dataset['ID'] == row_id) & (~dataset['ignored'].astype(str).str.contains('&'))]
-                print(result)
-                print(dataset[(dataset['ID'] == row_id)])
-                print(result['ID'].to_list())
-                ids.extend(result['ID'].to_list())
-                errors.extend([f'Не совпадает английское написание имени среди собак с такой же русском кличкой'] * len(result['ID'].to_list()))
-
-    grouped = dataset[dataset['Part1'] != ''].groupby('Part1')['ID'].unique().reset_index()
-    for row in grouped[grouped['ID'].apply(len) >= 2].values:
-        subset = dataset[dataset['ID'].isin(row[1])]
-        if subset['Part2'].nunique() != 1:
-            for row_id in row[1]:
-                result = dataset[(dataset['ID'] == row_id) & ~(dataset['ignored'].astype(str).str.contains('%'))]
-                ids.extend(result['ID'].to_list())
-                errors.extend([f'Не совпадает русское написание имени среди собак с такой же английской кличкой'] * len(result['ID'].to_list()))
-
-    result = dataset[(dataset['Part1'] == "") & ~(dataset['ignored'].astype(str).str.contains('9'))]
+    result = dataset[(dataset['Nickname'].str.contains('/') == False) & ~(dataset['ignored'].astype(str).str.contains('-'))]
     ids.extend(result['ID'].to_list())
-    errors.extend(["Не заполнена английская часть клички"] * len(result['ID'].to_list()))
+    errors.extend(['Нет разделения на между английской или русской частью'] * len(result['ID'].to_list()))
 
-    result = dataset[(dataset['Part2'] == "") & ~(dataset['ignored'].astype(str).str.contains('!'))]
-    ids.extend(result['ID'].to_list())
-    errors.extend(["Не заполнена русская часть клички"] * len(result['ID'].to_list()))
+    try:
+        dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
+        similar_pairs = find_similar_pairs_with_distance(dataset['Part1'], 1, 4)
+        for i in range(len(similar_pairs)):
+            first_name, second_name = similar_pairs[i]
+            result = dataset[(dataset['Part1'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
+            ids.extend(result['ID'].to_list())
+            errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
+            result = dataset[(dataset['Part1'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
+            ids.extend(result['ID'].to_list())
+            errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
+
+        similar_pairs = find_similar_pairs_with_distance(dataset['Part2'], 1, 4)
+        for i in range(len(similar_pairs)):
+            first_name, second_name = similar_pairs[i]
+            result = dataset[(dataset['Part2'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
+            ids.extend(result['ID'].to_list())
+            errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
+            result = dataset[(dataset['Part2'] == second_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
+            ids.extend(result['ID'].to_list())
+            errors.extend(['Возможна опечатка в английском имени'] * len(result['ID'].to_list()))
+
+        grouped = dataset[dataset['Part2'] != ''].groupby('Part2')['ID'].unique().reset_index()
+        for row in grouped[grouped['ID'].apply(len) >= 2].values:
+            subset = dataset[dataset['ID'].isin(row[1])]
+            if subset['Part1'].nunique() != 1:
+                for row_id in row[1]:
+                    result = dataset[(dataset['ID'] == row_id) & (~dataset['ignored'].astype(str).str.contains('&'))]
+                    ids.extend(result['ID'].to_list())
+                    errors.extend([f'Не совпадает английское написание имени среди собак с такой же русском кличкой'] * len(result['ID'].to_list()))
+
+        grouped = dataset[dataset['Part1'] != ''].groupby('Part1')['ID'].unique().reset_index()
+        for row in grouped[grouped['ID'].apply(len) >= 2].values:
+            subset = dataset[dataset['ID'].isin(row[1])]
+            if subset['Part2'].nunique() != 1:
+                for row_id in row[1]:
+                    result = dataset[(dataset['ID'] == row_id) & ~(dataset['ignored'].astype(str).str.contains('%'))]
+                    ids.extend(result['ID'].to_list())
+                    errors.extend([f'Не совпадает русское написание имени среди собак с такой же английской кличкой'] * len(result['ID'].to_list()))
+
+        result = dataset[(dataset['Part1'] == "") & ~(dataset['ignored'].astype(str).str.contains('9'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(["Не заполнена английская часть клички"] * len(result['ID'].to_list()))
+
+        result = dataset[(dataset['Part2'] == "") & ~(dataset['ignored'].astype(str).str.contains('!'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(["Не заполнена русская часть клички"] * len(result['ID'].to_list()))
+    except Exception:
+        pass
 
     today = datetime.now().date()
     mask = (dataset['Date'] <= today)
@@ -605,6 +609,7 @@ def ignore_data():
         'Возможна опечатка в русском имени': '#',
         'Не совпадает английское написание имени среди собак с такой же русском кличкой': '&',
         'Не совпадает русское написание имени среди собак с такой же английской кличкой': '%',
+        'Нет разделения на между английской или русской частью': '-'
     }
     row_id = request.json['id']
     error = request.json['error']
