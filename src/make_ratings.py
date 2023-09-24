@@ -10,7 +10,7 @@ import configparser
 from sys import argv
 
 config = configparser.ConfigParser()
-config.read('settings.ini')
+config.read('../settings.ini')
 
 DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
 config = {

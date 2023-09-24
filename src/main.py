@@ -12,8 +12,10 @@ from flask_mysqldb import MySQL
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
+from waitress import serve
+
 config = configparser.ConfigParser()
-config.read('settings.ini')
+config.read('../settings.ini')
 
 DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
 ADMIN_USERNAME, ADMIN_PASSWORD = config['SECURITY']['ADMIN_USERNAME'], config['SECURITY']['ADMIN_PASSWORD']
@@ -257,7 +259,7 @@ def run_script():
     link = request.form.get('link', '')
     message = None
     try:
-        subprocess.run(['python', 'src/make_ratings.py', link], check=True)
+        subprocess.run(['python', 'make_ratings.py', link], check=True)
         message = f"Данные успешно внесены из {link}"
     except Exception as e:
         message = f"Ошибка при занесении данных из {link}. \nОшибка: {e}"
@@ -642,5 +644,10 @@ error_handlers = {
 for error_code, handler in error_handlers.items():
     app.register_error_handler(error_code, handler)
 
+
+def create_app():
+    return app
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    serve(app, host="0.0.0.0", port=8080)
