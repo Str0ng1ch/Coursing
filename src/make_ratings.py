@@ -6,29 +6,17 @@ try:
     from BeautifulSoup import BeautifulSoup
 except ImportError:
     from bs4 import BeautifulSoup
-import configparser
-from sys import argv
 
-config = configparser.ConfigParser()
-config.read('../settings.ini')
-
-DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
+DATABASE, TABLE = "u2255198_coursing", "results_test"
 config = {
-    'user': config['DATABASE']['USER'],
-    'password': config['DATABASE']['PASSWORD'],
-    'host': config['DATABASE']['HOST'],
+    'user': "u2255198_artem",
+    'password': "00zEbyTI3y5avEot",
+    'host': "server25.hosting.reg.ru",
     'database': DATABASE,
 }
 
-path, url = argv
-page = urlopen(url)
-soup = BeautifulSoup(page, features="html.parser")
 
-date_pattern = r"\d{4}-\d{2}-\d{2}"
-date = re.search(date_pattern, url).group()
-
-
-def parse_data():
+def parse_data(soup):
     all_dogs = []
     all_rows = soup.find_all('tr', align="center", bgcolor="#ffffff")
     for i, row in enumerate(all_rows):
@@ -82,13 +70,11 @@ def insert_all_max_positions(all_dogs):
     return all_dogs
 
 
-def insert_into_database(all_dogs):
+def insert_into_database(all_dogs, date, url):
     connection = mysql.connector.connect(**config)
     cursor = connection.cursor()
 
-    insert_query = (f"INSERT INTO {DATABASE}.{TABLE} "
-                    f"(Date, Position, Type, Sex, Nickname, max_position, score, link, breedarchive_link, ignored) "
-                    f"VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)")
+    insert_query = (f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, score, link, breedarchive_link, ignored) VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)")
     for row in all_dogs:
         if len(row) == 6:
             cursor.execute(insert_query, [date] + row + [url] + ['', ''])
@@ -98,11 +84,13 @@ def insert_into_database(all_dogs):
     connection.close()
 
 
-def main():
-    all_dogs = parse_data()
+def make_rating(url):
+    page = urlopen(url)
+    soup = BeautifulSoup(page, features="html.parser")
+
+    date_pattern = r"\d{4}-\d{2}-\d{2}"
+    date = re.search(date_pattern, url).group()
+
+    all_dogs = parse_data(soup)
     all_dogs = insert_all_max_positions(all_dogs)
-    insert_into_database(all_dogs)
-
-
-if __name__ == "__main__":
-    main()
+    insert_into_database(all_dogs, date, url)

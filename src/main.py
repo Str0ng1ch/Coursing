@@ -1,6 +1,4 @@
-import configparser
 import io
-import subprocess
 from datetime import datetime
 from functools import wraps
 
@@ -12,31 +10,64 @@ from flask_mysqldb import MySQL
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from waitress import serve
+from src.make_ratings import make_rating
 
-config = configparser.ConfigParser()
-config.read('../settings.ini')
+DATABASE, TABLE = "u2255198_coursing", "results_test"
+ADMIN_USERNAME, ADMIN_PASSWORD = "tanya_admin", "p0n4ik"
+VIEW_USERNAME, VIEW_PASSWORD = "view_access", "Lur3C0urs1ngP@ssw0rd"
+SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
-DATABASE, TABLE = config['DATABASE']['DATABASE'], config['DATABASE']['TABLE']
-ADMIN_USERNAME, ADMIN_PASSWORD = config['SECURITY']['ADMIN_USERNAME'], config['SECURITY']['ADMIN_PASSWORD']
-SECRET_KEY = config['SECURITY']['SECRET_KEY']
+application = Flask(__name__)
+application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
+application.config['MYSQL_USER'] = "u2255198_artem"
+application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
+application.config['MYSQL_DB'] = DATABASE
 
-app = Flask(__name__)
-app.config['MYSQL_HOST'] = config['DATABASE']['HOST']
-app.config['MYSQL_USER'] = config['DATABASE']['USER']
-app.config['MYSQL_PASSWORD'] = config['DATABASE']['PASSWORD']
-app.config['MYSQL_DB'] = DATABASE
-
-mysql = MySQL(app)
-app.secret_key = SECRET_KEY
+mysql = MySQL(application)
+application.secret_key = SECRET_KEY
 
 
-@app.route('/')
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+
+        if auth and auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD:
+            return f(*args, **kwargs)
+
+        return Response(
+            'Could not verify your access level for that URL.\n'
+            'You have to login with proper credentials.', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+    return decorated
+
+
+def requires_auth_view(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+
+        if (auth and ((auth.username == VIEW_USERNAME and auth.password == VIEW_PASSWORD)
+                      or (auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD))):
+            return f(*args, **kwargs)
+
+        return Response(
+            'Could not verify your access level for that URL.\n'
+            'You have to login with proper credentials.', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+    return decorated
+
+
+@application.route('/')
+@requires_auth_view
 def index():
     return render_template('index.html')
 
 
-@app.route('/rating')
+@application.route('/rating')
+@requires_auth_view
 def rating():
     return render_template('rating.html')
 
@@ -77,7 +108,8 @@ def handle_gateway_timeout(error):
     return render_template('errors/error504.html'), 504
 
 
-@app.route('/get-score-details', methods=['POST'])
+@application.route('/get-score-details', methods=['POST'])
+@requires_auth_view
 def get_score_details():
     data = request.json
     name, dog_type = data['score'].split(', ')
@@ -93,7 +125,8 @@ def get_score_details():
     return jsonify(score_details)
 
 
-@app.route('/get-data', methods=['POST'])
+@application.route('/get-data', methods=['POST'])
+@requires_auth_view
 def get_data():
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
@@ -140,7 +173,8 @@ def get_data():
     return jsonify(data)
 
 
-@app.route('/get-all-data', methods=['POST'])
+@application.route('/get-all-data', methods=['POST'])
+@requires_auth
 def get_all_data():
     selected_id = request.json['selectedID']
     selected_date = request.json['selectedDate']
@@ -190,22 +224,6 @@ def get_all_data():
              "max_position": row[6], "score": row[7], "link": row[8], "breedLink": row[9]} for row in rows]
 
     return jsonify(data)
-
-
-def requires_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-
-        if auth and auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD:
-            return f(*args, **kwargs)
-
-        return Response(
-            'Could not verify your access level for that URL.\n'
-            'You have to login with proper credentials.', 401,
-            {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-    return decorated
 
 
 def delete_from_table():
@@ -259,7 +277,7 @@ def run_script():
     link = request.form.get('link', '')
     message = None
     try:
-        subprocess.run(['python', 'make_ratings.py', link], check=True)
+        make_rating(link)
         message = f"Данные успешно внесены из {link}"
     except Exception as e:
         message = f"Ошибка при занесении данных из {link}. \nОшибка: {e}"
@@ -370,7 +388,7 @@ def download_excel(cursor, full=True):
     return excel_data
 
 
-@app.route('/add-data', methods=['GET', 'POST'])
+@application.route('/add-data', methods=['GET', 'POST'])
 @requires_auth
 def add_data():
     message = session.pop('message', None)
@@ -418,7 +436,8 @@ def add_data():
 
     return render_template('add_data.html', message=message)
 
-@app.route("/update-data", methods=["POST"])
+
+@application.route("/update-data", methods=["POST"])
 @requires_auth
 def update_data():
     updated_data = request.json
@@ -480,7 +499,8 @@ def find_similar_pairs_with_distance(values_list, min_distance, max_distance):
 
     return similar_pairs
 
-@app.route("/check-database", methods=["POST"])
+
+@application.route("/check-database", methods=["POST"])
 @requires_auth
 def check_database():
     cursor = mysql.connection.cursor()
@@ -495,12 +515,14 @@ def check_database():
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан пол'] * len(result['ID'].to_list()))
 
-    mask = (~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])) & ~(dataset['ignored'].astype(str).str.contains('2'))
+    mask = (~dataset['Type'].isin(['Стандартный', 'Стандартный-спринтеры', 'Юниоры'])) & ~(
+        dataset['ignored'].astype(str).str.contains('2'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно указан класс'] * len(result['ID'].to_list()))
 
-    mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & ~(dataset['ignored'].astype(str).str.contains('3'))
+    mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & ~(
+        dataset['ignored'].astype(str).str.contains('3'))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
@@ -521,7 +543,8 @@ def check_database():
     ids.extend(result['ID'].to_list())
     errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
-    result = dataset[(dataset['Nickname'].str.contains('/') == False) & ~(dataset['ignored'].astype(str).str.contains('-'))]
+    result = dataset[
+        (dataset['Nickname'].str.contains('/') == False) & ~(dataset['ignored'].astype(str).str.contains('-'))]
     ids.extend(result['ID'].to_list())
     errors.extend(['Нет разделения на между английской или русской частью'] * len(result['ID'].to_list()))
 
@@ -554,7 +577,9 @@ def check_database():
                 for row_id in row[1]:
                     result = dataset[(dataset['ID'] == row_id) & (~dataset['ignored'].astype(str).str.contains('&'))]
                     ids.extend(result['ID'].to_list())
-                    errors.extend([f'Не совпадает английское написание имени среди собак с такой же русском кличкой'] * len(result['ID'].to_list()))
+                    errors.extend(
+                        [f'Не совпадает английское написание имени среди собак с такой же русском кличкой'] * len(
+                            result['ID'].to_list()))
 
         grouped = dataset[dataset['Part1'] != ''].groupby('Part1')['ID'].unique().reset_index()
         for row in grouped[grouped['ID'].apply(len) >= 2].values:
@@ -563,7 +588,9 @@ def check_database():
                 for row_id in row[1]:
                     result = dataset[(dataset['ID'] == row_id) & ~(dataset['ignored'].astype(str).str.contains('%'))]
                     ids.extend(result['ID'].to_list())
-                    errors.extend([f'Не совпадает русское написание имени среди собак с такой же английской кличкой'] * len(result['ID'].to_list()))
+                    errors.extend(
+                        [f'Не совпадает русское написание имени среди собак с такой же английской кличкой'] * len(
+                            result['ID'].to_list()))
 
         result = dataset[(dataset['Part1'] == "") & ~(dataset['ignored'].astype(str).str.contains('9'))]
         ids.extend(result['ID'].to_list())
@@ -594,7 +621,7 @@ def check_database():
     return jsonify([{"id": row[0], "error": row[1]} for row in zip(ids, errors)])
 
 
-@app.route("/ignore-data", methods=["POST"])
+@application.route("/ignore-data", methods=["POST"])
 def ignore_data():
     errors = {
         "Неправильно указан пол": '1',
@@ -642,12 +669,12 @@ error_handlers = {
 }
 
 for error_code, handler in error_handlers.items():
-    app.register_error_handler(error_code, handler)
+    application.register_error_handler(error_code, handler)
 
 
 def create_app():
-    return app
+    return application
 
 
 if __name__ == '__main__':
-    serve(app, host="0.0.0.0", port=8080)
+    application.run(host='0.0.0.0')
