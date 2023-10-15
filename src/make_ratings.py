@@ -7,11 +7,17 @@ try:
 except ImportError:
     from bs4 import BeautifulSoup
 
-DATABASE, TABLE = "u2255198_coursing", "results_test"
+DATABASE, TABLE = "coursing", "results_test"
+# config = {
+#     'user': "u2255198_artem",
+#     'password': "00zEbyTI3y5avEot",
+#     'host': "server25.hosting.reg.ru",
+#     'database': DATABASE,
+# }
 config = {
-    'user': "u2255198_artem",
-    'password': "00zEbyTI3y5avEot",
-    'host': "server25.hosting.reg.ru",
+    'user': "root",
+    'password': "My$QLP@ssw0rd",
+    'host': "localhost",
     'database': DATABASE,
 }
 

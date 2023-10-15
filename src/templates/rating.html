@@ -26,13 +26,17 @@
         .table-header {
             background-color: #D1F2A5;
         }
+
+        #infoModal .modal-dialog {
+            max-width: 40%;
+        }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="/">
-        <img src="../static/images/icon.jpg" alt="Card image cap" style="width: 30px; height: 30px">
+        <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
         Уиппеты. Курсинг
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
@@ -132,12 +136,13 @@
             <div class="modal-body">
                 <table class="table">
                     <thead>
-                    <tr>
-                        <th>Дата</th>
-                        <th>Позиция</th>
-                        <th>Всего участников</th>
+                    <tr class="table-header">
+                        <th>№</th>
+                        <th>Дата соревнований</th>
+                        <th>Место</th>
+                        <th>Количество участников в классе</th>
                         <th>Баллы</th>
-                        <th>Ссылка</th>
+                        <th>Источник</th>
                     </tr>
                     </thead>
                     <tbody id="modalTableBody">
@@ -296,10 +301,10 @@
                                 let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
                                 let year = inputDate.getUTCFullYear();
                                 let formattedDate = `${day}.${month}.${year}`;
-                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Ссылка</a></td></tr>';
+                                modalTableContent += '<tr><td>' + (i + 1) + '</td><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Ссылка</a></td></tr>';
                             }
                             $("#modalTableBody").html(modalTableContent);
-                            $("#infoModalLabel").html($("#infoModalLabel").html() + '<a href="' + scoreDetails[0][6] + '" style="text-decoration: underline" target="_blank">' + scoreDetails[0][5] + '</a>');
+                            $("#infoModalLabel").html('Информация о баллах <br>' + '<a href="' + scoreDetails[0][6] + '" style="text-decoration: underline" target="_blank">' + scoreDetails[0][5] + '</a>');
 
                             $("#infoModal").modal('show');
                         }
