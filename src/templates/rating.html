@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <title>ProCoursing</title>
+    <title>Уиппеты. Курсинг</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="icon" href="../static/images/paw.ico">
+    <link rel="icon" href="../static/images/icon.ico">
 
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <style>
@@ -32,8 +32,8 @@
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="/">
-        <img src="../static/images/paw.png" alt="Card image cap" style="width: 30px; height: 30px">
-        ПроКурсинг
+        <img src="../static/images/icon.jpg" alt="Card image cap" style="width: 30px; height: 30px">
+        Уиппеты. Курсинг
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -124,7 +124,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="infoModalLabel">Информация о баллах</h5>
+                <h5 class="modal-title" id="infoModalLabel">Информация о баллах <br></h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -145,7 +145,7 @@
                 </table>
             </div>
             <div class="modal-footer d-flex justify-content-center">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close_button">Закрыть</button>
             </div>
         </div>
     </div>
@@ -299,6 +299,8 @@
                                 modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Ссылка</a></td></tr>';
                             }
                             $("#modalTableBody").html(modalTableContent);
+                            $("#infoModalLabel").html($("#infoModalLabel").html() + '<a href="' + scoreDetails[0][6] + '" style="text-decoration: underline" target="_blank">' + scoreDetails[0][5] + '</a>');
+
                             $("#infoModal").modal('show');
                         }
                     });
