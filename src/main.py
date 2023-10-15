@@ -116,7 +116,7 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f"SELECT date, position, max_position, score, link FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
+    query = f"SELECT date, position, max_position, score, link, Nickname FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
     cursor.execute(query)
     score_details = cursor.fetchall()
 
@@ -137,7 +137,7 @@ def get_data():
     cur = mysql.connection.cursor()
     base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
                                     FROM {DATABASE}.{TABLE} 
-                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
                                     ) AS sub"""
     conditions = []

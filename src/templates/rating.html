@@ -49,7 +49,13 @@
             </li>
         </ul>
     </div>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <p class="email"><i class="fas fa-envelope"></i> lurecoursing@mail.ru</p>
+        </li>
+    </ul>
 </nav>
+
 
 <div class="container mt-5">
     <table class="table table-bordered">
@@ -65,23 +71,6 @@
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                    Класс
-                    <select class="form-control ml-2" id="typeDropdown">
-                        <option value="all" selected>Все</option>
-                        <option value="Стандартный">Стандартный</option>
-                        <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
-                        <option value="Юниоры">Юниоры</option>
-                    </select>
-                </div>
-            </th>
-            <th>
-                <div class="d-flex align-items-center">
-                    Кличка
-                    <input type="text" class="form-control ml-2" id="nameSearch" placeholder="Поиск...">
-                </div>
-            </th>
-            <th>
                 <div class="d-flex align-items-center">
                     Пол
                     <select class="form-control ml-2" id="sexDropdown">
@@ -89,6 +78,22 @@
                         <option value="Кобель">Кобель</option>
                         <option value="Сука">Сука</option>
                     </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    Класс
+                    <select class="form-control ml-2" id="typeDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="Стандартный">Стандартный</option>
+                        <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    Кличка
+                    <input type="text" class="form-control ml-2" id="nameSearch" placeholder="Поиск...">
                 </div>
             </th>
             <th>
@@ -136,7 +141,6 @@
                     </tr>
                     </thead>
                     <tbody id="modalTableBody">
-                    <!-- Сюда будут добавляться данные из базы данных -->
                     </tbody>
                 </table>
             </div>
@@ -153,17 +157,14 @@
 <footer class="footer" id="footer">
     <div class="container text-center">
         <div class="row">
-            <div class="col-md-6">
-                <h5>О нас</h5>
-                <p>Мы представляем систему отслеживания рейтинга собаки на соревнованиях по курсингу.</p>
-            </div>
-            <div class="col-md-6">
+            <div class="col-12 text-center">
                 <h5>Контакты</h5>
-                <p class="email"><i class="fas fa-envelope"></i>  lurecoursing@mail.ru</p>
+                <p class="email"><i class="fas fa-envelope"></i> lurecoursing@mail.ru</p>
             </div>
         </div>
     </div>
 </footer>
+
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -245,9 +246,9 @@
                         tableContent += '<tr class="' + genderClass + '">';
                         if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
                             tableContent += '<td>' + (i + 1) + '</td>';
+                            tableContent += '<td>' + data[i].sex + '</td>';
                             tableContent += '<td>' + data[i].type + '</td>';
                             tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                            tableContent += '<td>' + data[i].sex + '</td>';
                             tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
                             tableContent += '</tr>';
                         }
@@ -295,7 +296,7 @@
                                 let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
                                 let year = inputDate.getUTCFullYear();
                                 let formattedDate = `${day}.${month}.${year}`;
-                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Источник</a></td></tr>';
+                                modalTableContent += '<tr><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Ссылка</a></td></tr>';
                             }
                             $("#modalTableBody").html(modalTableContent);
                             $("#infoModal").modal('show');
