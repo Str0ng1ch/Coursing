@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="icon" href="../static/images/paw.ico">
+    <link rel="icon" href="../static/images/icon.ico">
     <style>
         .fa-times {
             color: red;
@@ -40,7 +40,10 @@
                 <a class="nav-link" href="/">Главная</a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/rating">Рейтинг <span class="sr-only">(current)</span></a>
+                <a class="nav-link" href="/rating">Рейтинг</a>
+            </li>
+             <li class="nav-item">
+                <a class="nav-link" href="/best">Лучшие</a>
             </li>
         </ul>
     </div>
@@ -151,7 +154,7 @@
                     </div>
                     <div class="col-md-9">
                         <div class="form-group">
-                            <input type="text" class="form-control" id="link" name="link" required>
+                            <input type="text" class="form-control" id="link" name="link">
                         </div>
                     </div>
                 </div>
@@ -162,7 +165,7 @@
                     </div>
                     <div class="col-md-9">
                         <div class="form-group">
-                            <input type="text" class="form-control" id="breed_link" name="breed_link" required>
+                            <input type="text" class="form-control" id="breed_link" name="breed_link">
                         </div>
                     </div>
                 </div>
@@ -349,7 +352,8 @@
 
     <h1 style="text-align: center"> Дополнительно </h1>
     <div class="text-center">
-        <button class="btn btn-primary mt-3 check-database" id="check_database" name="check_database">Проверить данные</button>
+        <button class="btn btn-primary mt-3 check-database-with-links" id="check_database" name="check_database">Проверить данные с ссылками (долго)</button>
+        <button class="btn btn-primary mt-3 check-database-without-links" id="check_database" name="check_database">Проверить данные без ссылкок (быстро)</button>
         <form action="/add-data" method="post" class="mb-3">
             <div class="row">
                 <div class="col-md-6 mb-5">
@@ -478,6 +482,35 @@
     var count = 0;
     var SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
 
+    function saveFormValues() {
+        const form = document.querySelector('form');
+        form.addEventListener('input', function (event) {
+            const inputElement = event.target;
+            const id = inputElement.id;
+            if (id === 'date' || id === 'type' || id === 'sex' || id === 'max_position' || id === 'link') {
+                localStorage.setItem(id, inputElement.value);
+            }
+        });
+    }
+
+
+    // Function to load saved form values from localStorage
+    function loadFormValues() {
+        const form = document.querySelector('form');
+        form.querySelectorAll('input, select').forEach(function (inputElement) {
+            const id = inputElement.id;
+            if (id === 'date' || id === 'type' || id === 'sex' || id === 'max_position' || id === 'link') {
+                const savedValue = localStorage.getItem(id);
+                if (savedValue !== null) {
+                    inputElement.value = savedValue;
+                }
+            }
+        });
+    }
+
+
+    saveFormValues();
+    loadFormValues();
 
     document.addEventListener("DOMContentLoaded", function () {
         let messageElement = document.getElementById("message");
@@ -754,10 +787,34 @@
     });
 
 
-    $(".check-database").click(function () {
+    $(".check-database-without-links").click(function () {
         let score = $(this).data('score');
         $.ajax({
-            url: "/check-database",
+            url: "/check-database-without-links",
+            type: "POST",
+            data: JSON.stringify({score: score}),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                let modalTableContent = '';
+                for (let i = 0; i < data.length; i++) {
+                    modalTableContent += '<tr>'
+                    modalTableContent += '<td> <a class="delete-row" data-error="' + data[i].error + '" data-id="' + data[i].id + '"> <i class="fas fa-times"></i> </a></td>';
+                    modalTableContent += '<td>' + data[i].id + '</td>';
+                    modalTableContent += '<td>' + data[i].error + '</td>';
+                    modalTableContent += '</tr>'
+                }
+                console.log(modalTableContent);
+                $("#checkDatabaseModalTableBody").html(modalTableContent);
+                $("#checkDatabase").modal('show');
+            }
+        });
+    });
+
+    $(".check-database-with-links").click(function () {
+        let score = $(this).data('score');
+        $.ajax({
+            url: "/check-database-with-links",
             type: "POST",
             data: JSON.stringify({score: score}),
             contentType: "application/json; charset=utf-8",

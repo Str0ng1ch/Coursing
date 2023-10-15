@@ -76,6 +76,12 @@ def rating():
     return render_template('rating.html')
 
 
+@application.route('/best')
+@requires_auth_view
+def best():
+    return render_template('best.html')
+
+
 def handle_bad_request(error):
     return render_template('errors/error400.html'), 400
 
@@ -120,7 +126,7 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f"SELECT date, position, max_position, score, link, Nickname, breedarchive_link FROM {DATABASE}.{TABLE} WHERE Nickname = '{name}' AND Type = '{dog_type}' ORDER BY date"
+    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date'
     cursor.execute(query)
     score_details = cursor.fetchall()
 
@@ -303,6 +309,10 @@ def autofill_data():
             ) AS t2 ON t1.Nickname = t2.Nickname
             SET t1.breedarchive_link = t2.breedarchive_link;
             """
+        cursor.execute(query)
+        mysql.connection.commit()
+
+        query = f"""UPDATE {DATABASE}.{TABLE} SET Score = 0 WHERE Position = 0;"""
         cursor.execute(query)
         mysql.connection.commit()
         message = f"Данные успешно заполнены"
@@ -504,9 +514,19 @@ def find_similar_pairs_with_distance(values_list, min_distance, max_distance):
     return similar_pairs
 
 
-@application.route("/check-database", methods=["POST"])
+@application.route("/check-database-without-links", methods=["POST"])
 @requires_auth
-def check_database():
+def check_database_without_links():
+    return check_data(check_links=False)
+
+
+@application.route("/check-database-with-links", methods=["POST"])
+@requires_auth
+def check_database_with_links():
+    return check_data()
+
+
+def check_data(check_links=True):
     cursor = mysql.connection.cursor()
     cursor.execute(f"SELECT * FROM {DATABASE}.{TABLE}")
 
@@ -531,21 +551,22 @@ def check_database():
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
 
-    unique_links = dataset['link'].unique()
-    link_status_dict = {link: check_url_status(link) for link in unique_links}
-    dataset['Link_status'] = dataset['link'].map(link_status_dict)
+    if check_links:
+        unique_links = dataset['link'].unique()
+        link_status_dict = {link: check_url_status(link) for link in unique_links}
+        dataset['Link_status'] = dataset['link'].map(link_status_dict)
 
-    unique_breed_links = dataset['link'].unique()
-    breed_link_status_dict = {link: check_url_status(link) for link in unique_breed_links}
-    dataset['breedarchive_link_status'] = dataset['breedarchive_link'].map(breed_link_status_dict)
+        unique_breed_links = dataset['breedarchive_link'].unique()
+        breed_link_status_dict = {link: check_url_status(link) for link in unique_breed_links}
+        dataset['breedarchive_link_status'] = dataset['breedarchive_link'].map(breed_link_status_dict)
 
-    result = dataset[(dataset['Link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('4'))]
-    ids.extend(result['ID'].to_list())
-    errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
+        result = dataset[(dataset['Link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('4'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
 
-    result = dataset[(dataset['breedarchive_link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('5'))]
-    ids.extend(result['ID'].to_list())
-    errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
+        result = dataset[(dataset['breedarchive_link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('5'))]
+        ids.extend(result['ID'].to_list())
+        errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
     result = dataset[
         (dataset['Nickname'].str.contains('/') == False) & ~(dataset['ignored'].astype(str).str.contains('-'))]
@@ -554,7 +575,7 @@ def check_database():
 
     try:
         dataset[['Part1', 'Part2']] = dataset['Nickname'].str.split('/', n=1, expand=True)
-        similar_pairs = find_similar_pairs_with_distance(dataset['Part1'], 1, 4)
+        similar_pairs = find_similar_pairs_with_distance(dataset['Part1'], 1, 2)
         for i in range(len(similar_pairs)):
             first_name, second_name = similar_pairs[i]
             result = dataset[(dataset['Part1'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('#'))]
@@ -564,7 +585,7 @@ def check_database():
             ids.extend(result['ID'].to_list())
             errors.extend(['Возможна опечатка в русском имени'] * len(result['ID'].to_list()))
 
-        similar_pairs = find_similar_pairs_with_distance(dataset['Part2'], 1, 4)
+        similar_pairs = find_similar_pairs_with_distance(dataset['Part2'], 1, 2)
         for i in range(len(similar_pairs)):
             first_name, second_name = similar_pairs[i]
             result = dataset[(dataset['Part2'] == first_name) & ~(dataset['ignored'].astype(str).str.contains('@'))]
