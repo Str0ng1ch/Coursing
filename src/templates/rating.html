@@ -52,7 +52,7 @@
                 <a class="nav-link" href="/rating">Рейтинг <span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" href="/best">Лучшие</a>
+                <a class="nav-link" href="/best">Топ-5</a>
             </li>
         </ul>
     </div>
@@ -239,7 +239,16 @@
                     $("#dogData").html(tableContent);
                 } else {
                     $("#noResultsMessage").hide();
+                    let rating = 0;
+                    let visible_rating = 1;
+
                     for (let i = 0; i < data.length; i++) {
+                        rating += 1;
+
+                        if (i !== 0 && data[i - 1].TotalScore !== data[i].TotalScore) {
+                            visible_rating = rating
+                        }
+
                         let currentScore = parseInt(data[i].TotalScore);
                         if (currentScore > maxScore) {
                             maxScore = currentScore;
@@ -253,7 +262,7 @@
 
                         tableContent += '<tr class="' + genderClass + '">';
                         if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
-                            tableContent += '<td>' + (i + 1) + '</td>';
+                            tableContent += '<td>' + visible_rating + '</td>';
                             tableContent += '<td>' + data[i].sex + '</td>';
                             tableContent += '<td>' + data[i].type + '</td>';
                             tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';

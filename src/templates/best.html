@@ -7,6 +7,8 @@
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
     <link rel="icon" href="../static/images/icon.ico">
 
     <style>
@@ -24,6 +26,22 @@
             width: 80%;
             margin: 0 auto;
         }
+
+        .female-row {
+            background-color: rgba(247, 151, 247, 0.2);
+        }
+
+        .male-row {
+            background-color: rgba(196, 227, 242, 0.3);
+        }
+
+        .table-header {
+            background-color: #D1F2A5;
+        }
+
+        #infoModal .modal-dialog {
+            max-width: 40%;
+        }
     </style>
 </head>
 <body>
@@ -38,14 +56,14 @@
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
-            <li class="nav-item active">
+            <li class="nav-item">
                 <a class="nav-link" href="/">Главная</a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/rating">Рейтинг</a>
             </li>
-             <li class="nav-item active">
-                <a class="nav-link" href="/best">Лучшие <span class="sr-only">(current)</span></a>
+            <li class="nav-item active">
+                <a class="nav-link" href="/best">Топ-5 <span class="sr-only">(current)</span></a>
             </li>
         </ul>
     </div>
@@ -55,6 +73,108 @@
         </li>
     </ul>
 </nav>
+
+<div class="container">
+    <div class="row mt-4">
+        <div class="col-12 col-md-6">
+            <h2>Кобели, Стандартный</h2>
+            <table class="table">
+                <thead>
+                <tr class="table-header">
+                    <th>Рейтинг</th>
+                    <th>Кличка</th>
+                    <th>Баллы</th>
+                </tr>
+                </thead>
+                <tbody id="section1-data">
+                <!-- Data will be loaded here using AJAX -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <h2>Суки, Стандартный</h2>
+            <table class="table">
+                <thead>
+                <tr class="table-header">
+                    <th>Рейтинг</th>
+                    <th>Кличка</th>
+                    <th>Баллы</th>
+                </tr>
+                </thead>
+                <tbody id="section2-data">
+                <!-- Data will be loaded here using AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12 col-md-6">
+            <h2>Кобели, Стандартный-спринтеры</h2>
+            <table class="table">
+                <thead>
+                <tr class="table-header">
+                    <th>Рейтинг</th>
+                    <th>Кличка</th>
+                    <th>Баллы</th>
+                </tr>
+                </thead>
+                <tbody id="section3-data">
+                <!-- Data will be loaded here using AJAX -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <h2>Суки, Стандартный спринтеры</h2>
+            <table class="table">
+                <thead>
+                <tr class="table-header">
+                    <th>Рейтинг</th>
+                    <th>Кличка</th>
+                    <th>Баллы</th>
+                </tr>
+                </thead>
+                <tbody id="section4-data">
+                <!-- Data will be loaded here using AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Информация о баллах <br></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr class="table-header">
+                        <th>№</th>
+                        <th>Дата соревнований</th>
+                        <th>Место</th>
+                        <th>Количество участников в классе</th>
+                        <th>Баллы</th>
+                        <th>Источник</th>
+                    </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close_button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <footer class="footer" id="footer">
     <div class="container text-center">
@@ -66,6 +186,89 @@
         </div>
     </div>
 </footer>
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script>
+    function loadTableData(tableId, data, genderClass) {
+        let rating = 0;
+        let visible_rating = 1;
+        let tableContent = '';
 
+        var tableBody = document.getElementById(tableId);
+        tableBody.innerHTML = '';
+        data.forEach(function (item, index) {
+            rating += 1;
+            if (index !== 0 && data[index - 1][1] !== data[index][1]) {
+                visible_rating = rating
+            }
+            tableContent += '<tr class="' + genderClass + '">';
+            tableContent += '<td>' + visible_rating + '</td>';
+            tableContent += '<td><a href="' + item[2] + '" style="text-decoration: underline" target="_blank">' + item[0] + '</a></td>';
+            tableContent += '<td><div class="d-flex align-items-center">' + item[1] + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + item[0] + ', ' + item[3] + '"><i class="fas fa-question-circle"></i></a></div></td>';
+            tableContent += '</tr>';
+        });
+        $("#" + tableId).html(tableContent);
+    }
+
+    $.ajax({
+        url: '/get-score-details-section1',
+        method: 'GET',
+        success: function (data) {
+            loadTableData('section1-data', data, 'male-row');
+        }
+    });
+
+    $.ajax({
+        url: '/get-score-details-section2',
+        method: 'GET',
+        success: function (data) {
+            loadTableData('section2-data', data, 'female-row');
+        }
+    });
+
+    $.ajax({
+        url: '/get-score-details-section3',
+        method: 'GET',
+        success: function (data) {
+            loadTableData('section3-data', data, 'male-row');
+        }
+    });
+
+    $.ajax({
+        url: '/get-score-details-section4',
+        method: 'GET',
+        success: function (data) {
+            loadTableData('section4-data', data, 'female-row');
+        }
+    });
+
+    $(document).on("click", ".score-info", function () {
+        let score = $(this).data('score');
+        $.ajax({
+            url: "/get-score-details",
+            type: "POST",
+            data: JSON.stringify({score: score}),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (scoreDetails) {
+                let modalTableContent = '';
+                for (let i = 0; i < scoreDetails.length; i++) {
+                    let inputDate = new Date(scoreDetails[i][0]);
+                    let day = inputDate.getUTCDate().toString().padStart(2, '0');
+                    let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                    let year = inputDate.getUTCFullYear();
+                    let formattedDate = `${day}.${month}.${year}`;
+                    modalTableContent += '<tr><td>' + (i + 1) + '</td><td>' + formattedDate + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" target="_blank">Ссылка</a></td></tr>';
+                }
+                $("#modalTableBody").html(modalTableContent);
+                $("#infoModalLabel").html('Информация о баллах <br>' + '<a href="' + scoreDetails[0][6] + '" style="text-decoration: underline" target="_blank">' + scoreDetails[0][5] + '</a>');
+
+                $("#infoModal").modal('show');
+            }
+        });
+    });
+</script>
 </body>
 </html>

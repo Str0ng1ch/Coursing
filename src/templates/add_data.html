@@ -43,7 +43,7 @@
                 <a class="nav-link" href="/rating">Рейтинг</a>
             </li>
              <li class="nav-item">
-                <a class="nav-link" href="/best">Лучшие</a>
+                <a class="nav-link" href="/best">Топ-5</a>
             </li>
         </ul>
     </div>
@@ -161,7 +161,7 @@
 
                 <div class="form-row">
                     <div class="col-md-3">
-                        <label for="link">Ссылка на Breed Archive:</label>
+                        <label for="breed_link">Ссылка на Breed Archive:</label>
                     </div>
                     <div class="col-md-9">
                         <div class="form-group">
@@ -202,7 +202,7 @@
             <br>
 
             <h2>Загрузить с ProCoursing</h2>
-            <form action="/add-data" method="post" class="mb-3">
+            <form action="/add-data" method="post" class="mb-3" onsubmit="return submitFormWithDelay(2000)">
                 <div class="input-group">
                     <label for="link" class="input-group-text">Ссылка:</label>
                     <input type="text" name="link" id="link" class="form-control">
@@ -481,6 +481,20 @@
 <script>
     var count = 0;
     var SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
+
+    var lastSubmitTime = 0;
+
+    function submitFormWithDelay(delay) {
+        var currentTime = new Date().getTime();
+        if (currentTime - lastSubmitTime >= delay) {
+            lastSubmitTime = currentTime;
+            return true;
+        } else {
+            alert("Пожалуйста, подождите не менее 2 секунд перед следующей отправкой.");
+            return false;
+        }
+    }
+
 
     function saveFormValues() {
         const form = document.querySelector('form');

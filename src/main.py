@@ -1,4 +1,5 @@
 import io
+from collections import Counter
 from datetime import datetime
 from functools import wraps
 
@@ -285,6 +286,7 @@ def add_data_from_excel():
 
 def run_script():
     link = request.form.get('link', '')
+    print(link)
     message = None
     try:
         make_rating(link)
@@ -295,10 +297,106 @@ def run_script():
         return message
 
 
+def calculate_language(text):
+    russian_letters = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя"
+    english_letters = "abcdefghijklmnopqrstuvwxyz"
+
+    russian_count, english_count = 0, 0
+    text = text.lower()
+
+    for char in text:
+        if char in russian_letters:
+            russian_count += 1
+        elif char in english_letters:
+            english_count += 1
+
+    if russian_count == 0 and english_count == 0:
+        return "na"
+    if russian_count >= english_count:
+        return "ru"
+    return "en"
+
+
+def update_nickname(nickname, row_id, cursor):
+    query = f'UPDATE {DATABASE}.{TABLE} SET Nickname = "{nickname}" WHERE ID = {row_id}'
+    cursor.execute(query)
+    mysql.connection.commit()
+
+
+def find_most_frequent_nickname(nicknames):
+    filtered_names = [name for name in nicknames if name != ""]
+    if len(filtered_names) > 0:
+        name_counts = Counter(filtered_names)
+        most_common_name, _ = name_counts.most_common(1)[0]
+
+        return most_common_name
+    return ''
+
+
+def change_parts(dataset, cursor):
+    for i in range(len(dataset)):
+        if '/' not in dataset.iloc[i]['Nickname']:
+            if calculate_language(dataset.iloc[i]['Nickname']) == 'ru':
+                update_nickname("/" + dataset.iloc[i]["Nickname"], dataset.iloc[i]["ID"], cursor)
+
+            elif calculate_language(dataset.iloc[i]['Nickname']) == 'en':
+                update_nickname(dataset.iloc[i]["Nickname"] + "/", dataset.iloc[i]["ID"], cursor)
+        else:
+            nicknames = dataset.iloc[i]['Nickname'].split("/")
+            if calculate_language(nicknames[0]) == 'ru':
+                update_nickname(nicknames[1] + "/" + nicknames[0], dataset.iloc[i]["ID"], cursor)
+            if calculate_language(nicknames[1]) == 'en':
+                update_nickname(nicknames[1] + "/" + nicknames[0], dataset.iloc[i]["ID"], cursor)
+
+
 def autofill_data():
     message = None
     cursor = mysql.connection.cursor()
     try:
+        query = f"SELECT * FROM {DATABASE}.{TABLE}"
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description]
+        dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
+
+        change_parts(dataset, cursor)
+
+        query = f"SELECT * FROM {DATABASE}.{TABLE}"
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description]
+        dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
+        dataset[['EnNickname', 'RuNickname']] = dataset['Nickname'].str.split('/', n=1, expand=True)
+
+        for i in range(len(dataset)):
+            current_dataset_en = dataset[
+                (dataset["EnNickname"] == dataset.iloc[i]["EnNickname"]) & (dataset["EnNickname"] != "")]
+            en_ids = current_dataset_en["ID"].tolist()
+            en_nicknames = current_dataset_en["RuNickname"].tolist()
+
+            current_dataset_ru = dataset[
+                (dataset["RuNickname"] == dataset.iloc[i]["RuNickname"]) & (dataset["RuNickname"] != "")]
+            ru_ids = current_dataset_ru["ID"].tolist()
+            ru_nicknames = current_dataset_ru["EnNickname"].tolist()
+
+            most_common_name_en = find_most_frequent_nickname(en_nicknames)
+            most_common_name_ru = find_most_frequent_nickname(ru_nicknames)
+
+            for j in range(len(en_ids)):
+                if dataset[dataset['ID'] == en_ids[j]]["RuNickname"].item() != most_common_name_en:
+                    update_nickname(
+                        dataset[dataset['ID'] == en_ids[j]]["EnNickname"].item() + "/" + most_common_name_en,
+                        dataset[dataset['ID'] == en_ids[j]]['ID'].item(), cursor)
+            for j in range(len(ru_ids)):
+                if dataset[dataset['ID'] == ru_ids[j]]["EnNickname"].item() != most_common_name_ru:
+                    update_nickname(
+                        dataset[dataset['ID'] == ru_ids[j]]["RuNickname"].item() + "/" + most_common_name_ru,
+                        dataset[dataset['ID'] == ru_ids[j]]['ID'].item(), cursor)
+
+        query = f"SELECT * FROM {DATABASE}.{TABLE}"
+        cursor.execute(query)
+        column_names = [desc[0] for desc in cursor.description]
+        dataset = pd.DataFrame(cursor.fetchall(), columns=column_names)
+        change_parts(dataset, cursor)
+
         query = f"""UPDATE {DATABASE}.{TABLE} AS t1
             JOIN (
                 SELECT Nickname, MAX(breedarchive_link) AS breedarchive_link
@@ -546,7 +644,8 @@ def check_data(check_links=True):
     errors.extend(['Неправильно указан класс'] * len(result['ID'].to_list()))
 
     mask = (dataset['Score'] != dataset['Max_position'] - dataset['Position'] + 1) & ~(
-        dataset['ignored'].astype(str).str.contains('3'))
+        dataset['ignored'].astype(str).str.contains('3')) & ~(
+            (dataset['Position'] == 0) & (dataset['Score'] == 0))
     result = dataset[mask]
     ids.extend(result['ID'].to_list())
     errors.extend(['Неправильно посчитаны очки'] * len(result['ID'].to_list()))
@@ -564,7 +663,8 @@ def check_data(check_links=True):
         ids.extend(result['ID'].to_list())
         errors.extend(['Недействительная ссылка на результаты соревнований'] * len(result['ID'].to_list()))
 
-        result = dataset[(dataset['breedarchive_link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('5'))]
+        result = dataset[
+            (dataset['breedarchive_link_status'] != 200) & ~(dataset['ignored'].astype(str).str.contains('5'))]
         ids.extend(result['ID'].to_list())
         errors.extend(['Недействительная ссылка на BreedArchive'] * len(result['ID'].to_list()))
 
@@ -681,6 +781,41 @@ def ignore_data():
         cursor.close()
 
 
+def get_score_details_sections(dog_type, sex):
+    cursor = mysql.connection.cursor()
+    query = f'''SELECT Nickname, TotalScore, breedarchive_link, Type, Sex FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
+                                    FROM {DATABASE}.{TABLE} 
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
+                                    GROUP BY Type, Sex, Nickname, breedarchive_link
+                                    ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC LIMIT 5'''
+    cursor.execute(query)
+    score_details = cursor.fetchall()
+
+    cursor.close()
+
+    return jsonify(score_details)
+
+
+@application.route("/get-score-details-section1", methods=["GET"])
+def get_score_details_section1():
+    return get_score_details_sections("Стандартный", "Кобель")
+
+
+@application.route("/get-score-details-section2", methods=["GET"])
+def get_score_details_section2():
+    return get_score_details_sections("Стандартный", "Сука")
+
+
+@application.route("/get-score-details-section3", methods=["GET"])
+def get_score_details_section3():
+    return get_score_details_sections("Стандартный-спринтеры", "Кобель")
+
+
+@application.route("/get-score-details-section4", methods=["GET"])
+def get_score_details_section4():
+    return get_score_details_sections("Стандартный-спринтеры", "Сука")
+
+
 error_handlers = {
     400: handle_bad_request,
     401: handle_unauthorized,
@@ -703,3 +838,6 @@ def create_app():
 
 if __name__ == '__main__':
     application.run(host='0.0.0.0')
+
+# TODO две части nickname одинакового языка
+# TODO совпадение одной части
