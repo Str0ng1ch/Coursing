@@ -127,7 +127,7 @@
         </div>
 
         <div class="col-12 col-md-6">
-            <h2>Суки, Стандартный спринтеры</h2>
+            <h2>Суки, Стандартный-спринтеры</h2>
             <table class="table">
                 <thead>
                 <tr class="table-header">
@@ -203,10 +203,12 @@
             if (index !== 0 && data[index - 1][1] !== data[index][1]) {
                 visible_rating = rating
             }
+            let name = item[0].replace("/", "<br>");
+            console.log(name)
             tableContent += '<tr class="' + genderClass + '">';
             tableContent += '<td>' + visible_rating + '</td>';
-            tableContent += '<td><a href="' + item[2] + '" style="text-decoration: underline" target="_blank">' + item[0] + '</a></td>';
-            tableContent += '<td><div class="d-flex align-items-center">' + item[1] + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + item[0] + ', ' + item[3] + '"><i class="fas fa-question-circle"></i></a></div></td>';
+            tableContent += '<td><a href="' + item[2] + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+            tableContent += '<td><div class="d-flex align-items-center">' + item[1] + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + item[3] + '"><i class="fas fa-question-circle"></i></a></div></td>';
             tableContent += '</tr>';
         });
         $("#" + tableId).html(tableContent);

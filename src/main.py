@@ -335,6 +335,7 @@ def find_most_frequent_nickname(nicknames):
 
 def change_parts(dataset, cursor):
     for i in range(len(dataset)):
+        update_nickname(dataset.iloc[i]["Nickname"].strip(), dataset.iloc[i]["ID"], cursor)
         if '/' not in dataset.iloc[i]['Nickname']:
             if calculate_language(dataset.iloc[i]['Nickname']) == 'ru':
                 update_nickname("/" + dataset.iloc[i]["Nickname"], dataset.iloc[i]["ID"], cursor)
