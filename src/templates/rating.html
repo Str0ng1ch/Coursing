@@ -29,6 +29,7 @@
 
         #infoModal .modal-dialog {
             max-width: 40%;
+            min-width: 600px;
         }
     </style>
 </head>
@@ -215,14 +216,14 @@
 
     function loadData(selectedRating, selectedType, selectedSex, nameSearch, selectedScore, allRows = false) {
         $.ajax({
-            url: "/get-data",
+            url: "/get-partial-data",
             type: "POST",
             data: JSON.stringify({
                 selectedRating: selectedRating,
                 selectedType: selectedType,
                 selectedSex: selectedSex,
-                nameSearch: nameSearch,
-                selectedScore: selectedScore,
+                {#nameSearch: nameSearch,#}
+                {#selectedScore: selectedScore,#}
                 allRows: allRows
             }),
             contentType: "application/json; charset=utf-8",
@@ -241,10 +242,10 @@
                     $("#noResultsMessage").hide();
                     let rating = 0;
                     let visible_rating = 1;
+                    let rows_count = 0;
 
                     for (let i = 0; i < data.length; i++) {
                         rating += 1;
-
                         if (i !== 0 && data[i - 1].TotalScore !== data[i].TotalScore) {
                             visible_rating = rating
                         }
@@ -256,18 +257,35 @@
                         if ((i + 1) > maxRating) {
                             maxRating = (i + 1);
                         }
-                        let breed_link = data[i].breedLink;
-                        let name = data[i].name.replace("/", "<br>");
-                        let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+                        let min_score;
+                        let max_score;
+                        if (selectedScore === 'all') {
+                            min_score = 0;
+                            max_score = 1000;
+                        } else {
+                            min_score = parseInt(selectedScore.split('-')[0]);
+                            max_score = parseInt(selectedScore.split('-')[1]);
+                        }
 
-                        tableContent += '<tr class="' + genderClass + '">';
-                        if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
-                            tableContent += '<td>' + visible_rating + '</td>';
-                            tableContent += '<td>' + data[i].sex + '</td>';
-                            tableContent += '<td>' + data[i].type + '</td>';
-                            tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                            tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
-                            tableContent += '</tr>';
+                        if (data[i].name.includes(nameSearch.toUpperCase()) &&
+                            (currentScore <= max_score && currentScore >= min_score)) {
+                            rows_count += 1
+                            if (allRows === false && rows_count === 10)
+                                break;
+
+                            let breed_link = data[i].breedLink;
+                            let name = data[i].name.replace("/", "<br>");
+                            let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+
+                            tableContent += '<tr class="' + genderClass + '">';
+                            if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
+                                tableContent += '<td>' + visible_rating + '</td>';
+                                tableContent += '<td>' + data[i].sex + '</td>';
+                                tableContent += '<td>' + data[i].type + '</td>';
+                                tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                                tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                                tableContent += '</tr>';
+                            }
                         }
                     }
                     if (maxScore > $("#maxScoreHolder").text()) {
@@ -283,14 +301,14 @@
                         $("#showAllButton").hide();
                         $("#showLessButton").show();
                     } else {
-                        if (data.length === 9) {
+                        if (rows_count === 10) {
                             tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
                         }
                         $("#showAllButton").show();
                         $("#showLessButton").hide();
                     }
 
-                    if (data.length < 9) {
+                    if (rows_count < 10) {
                         $("#showAllButton").hide();
                     }
 
