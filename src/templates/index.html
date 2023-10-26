@@ -34,9 +34,45 @@
         }
 
         .img-fluid {
-            width: 105%;
-            height: 96%;
+        {#width: 105%;#}{#height: 96%;#}
         }
+
+        /* Стили для экранов шире 768px */
+        @media (min-width: 916px) {
+            .row {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .text-section {
+                flex: 1;
+                padding: 20px;
+                text-align: center;
+            }
+
+            .container.text-section {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh; /* Сделать колонку по вертикали 100% высоты видимой области */
+            }
+
+            .image-section {
+                flex: 1;
+            }
+
+            .image-section img {
+                max-width: 100%; /* Изображение масштабируется, но не более 100% от родительского контейнера */
+            }
+        }
+
+        /* Стили для экранов шириной 768px и меньше */
+        @media (max-width: 915px) {
+            .row {
+                flex-direction: column; /* Теперь элементы идут один под другим */
+            }
+        }
+
     </style>
 </head>
 <body>
