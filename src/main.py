@@ -184,6 +184,42 @@ def get_data():
     return jsonify(data)
 
 
+@application.route('/get-partial-data', methods=['POST'])
+@requires_auth_view
+def get_partial_data():
+    selected_sex = request.json['selectedSex']
+    selected_type = request.json['selectedType']
+
+    cur = mysql.connection.cursor()
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
+                                    FROM {DATABASE}.{TABLE} 
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
+                                    GROUP BY Type, Sex, Nickname, breedarchive_link
+                                    ) AS sub"""
+    conditions = []
+    params = []
+
+    if selected_type != "all":
+        conditions.append("Type=%s")
+        params.append(selected_type)
+    if selected_sex != "all":
+        conditions.append("Sex=%s")
+        params.append(selected_sex)
+
+    if conditions:
+        query = base_query + " WHERE " + " AND ".join(conditions)
+    else:
+        query = base_query
+
+    query += " ORDER BY TotalScore DESC, Nickname ASC"
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3]} for row in
+            rows]
+
+    return jsonify(data)
+
+
 @application.route('/get-all-data', methods=['POST'])
 @requires_auth
 def get_all_data():
@@ -839,6 +875,3 @@ def create_app():
 
 if __name__ == '__main__':
     application.run(host='0.0.0.0')
-
-# TODO две части nickname одинакового языка
-# TODO совпадение одной части
