@@ -208,7 +208,7 @@
             tableContent += '<tr class="' + genderClass + '">';
             tableContent += '<td>' + visible_rating + '</td>';
             tableContent += '<td><a href="' + item[2] + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-            tableContent += '<td><div class="d-flex align-items-center">' + item[1] + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + item[3] + '"><i class="fas fa-question-circle"></i></a></div></td>';
+            tableContent += '<td><div class="d-flex align-items-center">' + item[1] + ' (' + item[5] + ')' + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + item[3] + '"><i class="fas fa-question-circle"></i></a></div></td>';
             tableContent += '</tr>';
         });
         $("#" + tableId).html(tableContent);

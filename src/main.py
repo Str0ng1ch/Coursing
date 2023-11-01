@@ -13,19 +13,19 @@ from openpyxl.utils import get_column_letter
 
 from src.make_ratings import make_rating
 
-# DATABASE, TABLE = "u2255198_coursing", "results_test"
-DATABASE, TABLE = "coursing", "results_test"
+DATABASE, TABLE = "u2255198_coursing", "results_test"
+# DATABASE, TABLE = "coursing", "results_test"
 ADMIN_USERNAME, ADMIN_PASSWORD = "tanya_admin", "p0n4ik"
 VIEW_USERNAME, VIEW_PASSWORD = "view_access", "Lur3C0urs1ngP@ssw0rd"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
 application = Flask(__name__)
-# application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
-# application.config['MYSQL_USER'] = "u2255198_artem"
-# application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
-application.config['MYSQL_HOST'] = "localhost"
-application.config['MYSQL_USER'] = "root"
-application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
+application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
+application.config['MYSQL_USER'] = "u2255198_artem"
+application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
+# application.config['MYSQL_HOST'] = "localhost"
+# application.config['MYSQL_USER'] = "root"
+# application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
 application.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(application)
@@ -48,39 +48,24 @@ def requires_auth(f):
     return decorated
 
 
-def requires_auth_view(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        auth = request.authorization
-
-        if (auth and ((auth.username == VIEW_USERNAME and auth.password == VIEW_PASSWORD)
-                      or (auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD))):
-            return f(*args, **kwargs)
-
-        return Response(
-            'Could not verify your access level for that URL.\n'
-            'You have to login with proper credentials.', 401,
-            {'WWW-Authenticate': 'Basic realm="Login Required"'})
-
-    return decorated
-
-
 @application.route('/')
-@requires_auth_view
 def index():
     return render_template('index.html')
 
 
 @application.route('/rating')
-@requires_auth_view
 def rating():
     return render_template('rating.html')
 
 
 @application.route('/best')
-@requires_auth_view
 def best():
     return render_template('best.html')
+
+
+@application.route('/explanations')
+def explanations():
+    return render_template('explanations.html')
 
 
 def handle_bad_request(error):
@@ -120,7 +105,6 @@ def handle_gateway_timeout(error):
 
 
 @application.route('/get-score-details', methods=['POST'])
-@requires_auth_view
 def get_score_details():
     data = request.json
     name, dog_type = data['score'].split(', ')
@@ -136,62 +120,13 @@ def get_score_details():
     return jsonify(score_details)
 
 
-@application.route('/get-data', methods=['POST'])
-@requires_auth_view
-def get_data():
-    selected_sex = request.json['selectedSex']
-    name_search = request.json['nameSearch']
-    selected_score = request.json['selectedScore']
-    selected_type = request.json['selectedType']
-    all_rows = request.json.get('allRows', False)
-
-    cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
-                                    FROM {DATABASE}.{TABLE} 
-                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
-                                    GROUP BY Type, Sex, Nickname, breedarchive_link
-                                    ) AS sub"""
-    conditions = []
-    params = []
-
-    if selected_type != "all":
-        conditions.append("Type=%s")
-        params.append(selected_type)
-    if selected_sex != "all":
-        conditions.append("Sex=%s")
-        params.append(selected_sex)
-    if name_search:
-        conditions.append("Nickname LIKE %s")
-        params.append("%" + name_search + "%")
-    if selected_score != "all":
-        score_range = selected_score.split('-')
-        conditions.append("TotalScore BETWEEN %s AND %s")
-        params.extend([score_range[0], score_range[1]])
-
-    if conditions:
-        query = base_query + " WHERE " + " AND ".join(conditions)
-    else:
-        query = base_query
-
-    query += " ORDER BY TotalScore DESC, Nickname ASC"
-    if not all_rows:
-        query += " LIMIT 9"
-    cur.execute(query, params)
-    rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3]} for row in
-            rows]
-
-    return jsonify(data)
-
-
 @application.route('/get-partial-data', methods=['POST'])
-@requires_auth_view
 def get_partial_data():
     selected_sex = request.json['selectedSex']
     selected_type = request.json['selectedType']
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
@@ -211,10 +146,10 @@ def get_partial_data():
     else:
         query = base_query
 
-    query += " ORDER BY TotalScore DESC, Nickname ASC"
+    query += " ORDER BY TotalScore DESC, RecordCount ASC, Nickname ASC"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3]} for row in
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3], "RecordCount": row[5]} for row in
             rows]
 
     return jsonify(data)
@@ -820,11 +755,11 @@ def ignore_data():
 
 def get_score_details_sections(dog_type, sex):
     cursor = mysql.connection.cursor()
-    query = f'''SELECT Nickname, TotalScore, breedarchive_link, Type, Sex FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore
+    query = f'''SELECT Nickname, TotalScore, breedarchive_link, Type, Sex, RecordCount FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
-                                    ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC LIMIT 5'''
+                                    ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC, RecordCount ASC LIMIT 5'''
     cursor.execute(query)
     score_details = cursor.fetchall()
 

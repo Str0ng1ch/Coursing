@@ -283,7 +283,7 @@
                                 tableContent += '<td>' + data[i].sex + '</td>';
                                 tableContent += '<td>' + data[i].type + '</td>';
                                 tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
-                                tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
+                                tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + ' (' + data[i].RecordCount + ')' + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle"></i></a></div></td>';
                                 tableContent += '</tr>';
                             }
                         }
