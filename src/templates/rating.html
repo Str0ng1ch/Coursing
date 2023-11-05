@@ -30,7 +30,7 @@
 
         #infoModal .modal-dialog {
             max-width: 59%;
-            min-width: 500px;
+            min-width: 800px;
         }
     </style>
 </head>
@@ -383,7 +383,7 @@
         let selectedScore = $("#scoreDropdown").val();
         let urlParts = window.location.href.split('/');
         let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
-        loadData(paramValue, initialRating, selectedType, selectedSex, nameSearch, selectedScore, false);
+        loadData(paramValue, initialRating, selectedType, selectedSex, nameSearch, selectedScore, allRows);
     }
 
     $("#nameSearch").on('input', function () {
