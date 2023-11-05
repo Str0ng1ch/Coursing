@@ -55,18 +55,18 @@ def index():
 
 @application.route('/rating/<param>')
 def rating(param):
-    if param == 'Уиппеты':
+    if param == 'whippets':
         return render_template('rating.html', param=param)
     else:
-        return render_template('developing.html', param=param)
+        return render_template('developing.html')
 
 
 @application.route('/best/<param>')
 def best(param):
-    if param == 'Уиппеты':
+    if param == 'whippets':
         return render_template('best.html', param=param)
     else:
-        return render_template('developing.html', param=param)
+        return render_template('developing.html')
 
 
 @application.route('/explanations')
@@ -135,6 +135,9 @@ def get_partial_data():
     selected_sex = request.json['selectedSex']
     selected_type = request.json['selectedType']
     param = request.json['paramValue']
+
+    if param == 'whippets':
+        param = 'Уиппеты'
 
     cur = mysql.connection.cursor()
     base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount, Breed
