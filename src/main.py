@@ -13,19 +13,19 @@ from openpyxl.utils import get_column_letter
 
 from src.make_ratings import make_rating
 
-DATABASE, TABLE = "u2255198_coursing", "results_test"
-# DATABASE, TABLE = "coursing", "results_test"
+# DATABASE, TABLE = "u2255198_coursing", "results_test"
+DATABASE, TABLE = "coursing", "results"
 ADMIN_USERNAME, ADMIN_PASSWORD = "tanya_admin", "p0n4ik"
 VIEW_USERNAME, VIEW_PASSWORD = "view_access", "Lur3C0urs1ngP@ssw0rd"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
 application = Flask(__name__)
-application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
-application.config['MYSQL_USER'] = "u2255198_artem"
-application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
-# application.config['MYSQL_HOST'] = "localhost"
-# application.config['MYSQL_USER'] = "root"
-# application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
+# application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
+# application.config['MYSQL_USER'] = "u2255198_artem"
+# application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
+application.config['MYSQL_HOST'] = "localhost"
+application.config['MYSQL_USER'] = "root"
+application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
 application.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(application)
@@ -53,19 +53,30 @@ def index():
     return render_template('index.html')
 
 
-@application.route('/rating')
-def rating():
-    return render_template('rating.html')
+@application.route('/rating/<param>')
+def rating(param):
+    if param == 'Уиппеты':
+        return render_template('rating.html', param=param)
+    else:
+        return render_template('developing.html', param=param)
 
 
-@application.route('/best')
-def best():
-    return render_template('best.html')
+@application.route('/best/<param>')
+def best(param):
+    if param == 'Уиппеты':
+        return render_template('best.html', param=param)
+    else:
+        return render_template('developing.html', param=param)
 
 
 @application.route('/explanations')
 def explanations():
     return render_template('explanations.html')
+
+
+@application.route('/in-developing')
+def developing():
+    return render_template('developing.html')
 
 
 def handle_bad_request(error):
@@ -111,10 +122,9 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date'
+    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link, Sex, location FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date'
     cursor.execute(query)
     score_details = cursor.fetchall()
-
     cursor.close()
 
     return jsonify(score_details)
@@ -124,11 +134,12 @@ def get_score_details():
 def get_partial_data():
     selected_sex = request.json['selectedSex']
     selected_type = request.json['selectedType']
+    param = request.json['paramValue']
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount
+    base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount, Breed
                                     FROM {DATABASE}.{TABLE} 
-                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры' AND Breed = '{param}'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
                                     ) AS sub"""
     conditions = []
@@ -149,7 +160,8 @@ def get_partial_data():
     query += " ORDER BY TotalScore DESC, RecordCount ASC, Nickname ASC"
     cur.execute(query, params)
     rows = cur.fetchall()
-    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3], "RecordCount": row[5]} for row in
+    data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3],
+             "RecordCount": row[5]} for row in
             rows]
 
     return jsonify(data)

@@ -30,7 +30,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="/">
         <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
-        Уиппеты. Курсинг
+        Курсинг РФ
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,11 +41,23 @@
             <li class="nav-item active">
                 <a class="nav-link" href="/">Главная <span class="sr-only">(current)</span></a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/rating">Рейтинг</a>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рейтинг</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="/rating/Уиппеты">Уиппеты</a>
+                    <a class="dropdown-item" href="/rating/Левретки">Левретки</a>
+                    <a class="dropdown-item" href="/rating/Фараонова_Собака">Фараонова собака</a>
+                </div>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/best">Топ-5</a>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Топ-5</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="/best/Уиппеты">Уиппеты</a>
+                    <a class="dropdown-item" href="/best/Левретки">Левретки</a>
+                    <a class="dropdown-item" href="/best/Фараонова_Собака">Фараонова собака</a>
+                </div>
             </li>
         </ul>
     </div>
@@ -62,25 +74,24 @@
     <p>Сортировать данные в рейтинге можно по нескольким параметрам. Для сортировки
         выберите нужный вам параметр (один или несколько) в выпадающем меню:
     </p>
-    <p><b>- ПОЛ. Сортировка собак по полу. </b> Выберите интересующий вас пол: Кобель
+    <p><b>- ПОЛ. Сортировка собак по полу. </b><br> Выберите интересующий вас пол: Кобель
         или Сука. По умолчанию рейтинг выводит кобелей и сук общим списком (строка
         «Все») </p>
-    <p><b> - КЛАСС: Сортировка собак по классам. </b> Выберите интересующий вас класс:
+    <p><b> - КЛАСС: Сортировка собак по классам. </b> <br>Выберите интересующий вас класс:
         Стандартный или Стандартный-Спринтеры. По умолчанию рейтинг выводит
         все классы общим списком (строка «Все») </p>
-    <p><b> - КЛИЧКА. Сортировка собак по кличе (на русском и английском языках). </b> Для
+    <p><b> - КЛИЧКА. Сортировка собак по кличе (на русском и английском языках). </b><br> Для
         поиска собаки по кличке введите в соответствующее поле кличку собаки
         (полностью или частично). Клички собак переносятся в рейтинг из каталогов
         участников чемпионатов по курсингу. За ошибки в кличках, допущенные в
-        каталогах чемпионатов, организаторы рейтинга ответственности не несут. </p>
-
-    <p><b>- БАЛЛЫ. Сортировка собак по количеству набранных баллов. </b> По
+        каталогах чемпионатов, создатели рейтинга ответственности не несут. </p>
+    <p><b>- БАЛЛЫ. Сортировка собак по количеству набранных баллов. </b><br> По
         умолчанию рейтинг выводит баллы в порядке их убывания (строка «Все»). Вы
         можете отсортировать собак в рейтинге по интересующему вас диапазону
         баллов. Диапазон баллов в выпадающем меню разбит на десятки, от
-        минимального количества баллов к максимальному.
-        В скобках рядом с числом баллов выводится количество соревнований, в
-        которых собака принимала участие на момент составления рейтинга.
+        минимального количества баллов к максимальному. </p>
+    В скобках рядом с числом баллов выводится количество соревнований, в
+    которых собака принимала участие на момент составления рейтинга.
 
     <p> Количество баллов зависит от результатов собаки в соревнованиях и числа
         соперников в классе. Баллы начисляются по принципу обратной зависимости.
@@ -102,6 +113,11 @@
     <p> Если собаки с равным количеством баллов принимали участие в одинаковом
         количестве соревнований, то финальная расстановка таких собак в
         рейтинге происходит в алфавитном порядке.</p>
+    <p><b> Карточка собаки. </b>
+        Карточка открывается при нажатии на синий кружок со знаком «?» в разделе «Баллы» и содержит информацию о
+        результатах всех чемпионатов, в которых собака принимала участие в текущем году. Цветом в карточке выделен
+        максимально результативный чемпионат, то есть, то соревнование, в котором эта собака получила максимальный балл
+        рейтинга.</p>
 </div>
 
 <footer class="footer" id="footer">
@@ -115,5 +131,9 @@
     </div>
 </footer>
 
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 </body>
 </html>
