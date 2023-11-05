@@ -248,13 +248,14 @@ def add_data_from_excel():
 
         values_list = df.apply(lambda row: (
             row['Дата'], row['Место'], row['Класс'], row['Пол'], row['Кличка'], row['Всего мест'],
-            row['Очки'], row['Ссылка на источник'], row['Ссылка на Breed Archive']
+            row['Очки'], row['Ссылка на источник'], row['Ссылка на Breed Archive'], row['Игнорированные ошибки'],
+            row['Место соревнования'], row['Порода']
         ), axis=1)
         values_list = values_list.apply(lambda tpl: tuple('' if pd.isna(val) else val for val in tpl)).tolist()
 
         query = (f"INSERT INTO {DATABASE}.{TABLE} "
-                 f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link)"
-                 f" VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s)")
+                 f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link, ignored, Location, Breed)"
+                 f" VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s, %s, %s)")
 
         cursor.executemany(query, values_list)
         mysql.connection.commit()
@@ -269,7 +270,6 @@ def add_data_from_excel():
 
 def run_script():
     link = request.form.get('link', '')
-    print(link)
     message = None
     try:
         make_rating(link)
@@ -456,7 +456,8 @@ def download_excel(cursor, full=True):
     result = cursor.fetchall()
 
     column_names = ['ID', 'Дата', 'Место', 'Класс', 'Пол', 'Кличка',
-                    'Всего мест', 'Очки', 'Ссылка на источник', 'Ссылка на Breed Archive']
+                    'Всего мест', 'Очки', 'Ссылка на источник', 'Ссылка на Breed Archive',
+                    'Игнорированные ошибки', 'Порода', 'Место соревнования']
 
     wb = Workbook()
     sheet = wb.active
