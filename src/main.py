@@ -122,7 +122,7 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link, Sex, location FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date'
+    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link, Sex, location FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date '
     cursor.execute(query)
     score_details = cursor.fetchall()
     cursor.close()
@@ -179,6 +179,8 @@ def get_all_data():
     name_search = request.json['nameSearch']
     selected_rating = request.json['selectedRating']
     selected_type = request.json['selectedType']
+    selected_location = request.json['selectedLocation']
+    selected_breed = request.json['selectedBreed']
     all_rows = request.json.get('allRows', False)
 
     cur = mysql.connection.cursor()
@@ -192,6 +194,12 @@ def get_all_data():
     if selected_sex != "all":
         conditions.append("Sex=%s")
         params.append(selected_sex)
+    if selected_location != "all":
+        conditions.append("Location=%s")
+        params.append(selected_location)
+    if selected_breed != "all":
+        conditions.append("Breed=%s")
+        params.append(selected_breed)
     if name_search:
         conditions.append("Nickname LIKE %s")
         params.append("%" + name_search + "%")
@@ -218,7 +226,8 @@ def get_all_data():
     cur.execute(query, params)
     rows = cur.fetchall()
     data = [{"id": row[0], "date": row[1], "position": row[2], "type": row[3], "sex": row[4], "Nickname": row[5],
-             "max_position": row[6], "score": row[7], "link": row[8], "breedLink": row[9]} for row in rows]
+             "max_position": row[6], "score": row[7], "link": row[8], "breedLink": row[9],
+             "ignored": row[10], "breed": row[11], "location": row[12]} for row in rows]
 
     return jsonify(data)
 
@@ -435,14 +444,16 @@ def add_data_from_form():
     score = request.form['score']
     link = request.form['link']
     breed_link = request.form['breed_link']
+    location = request.form['location']
+    breed = request.form['breed']
 
     cur = mysql.connection.cursor()
     try:
         cur.execute(
             f"INSERT INTO {DATABASE}.{TABLE} "
-            f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link) "
-            "VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s)",
-            (date, position, dog_type, sex, nickname, max_position, score, link, breed_link))
+            f"(Date, Position, Type, Sex, Nickname, max_position, Score, link, breedarchive_link, breed, location) "
+            "VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s, %s)",
+            (date, position, dog_type, sex, nickname, max_position, score, link, breed_link, breed, location))
         mysql.connection.commit()
         message = "Данные успешно внесены из формы!"
     except Exception as e:
@@ -775,7 +786,7 @@ def get_score_details_sections(dog_type, sex):
                                     FROM {DATABASE}.{TABLE} 
                                     WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
-                                    ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC, RecordCount ASC LIMIT 5'''
+                                    ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC, RecordCount ASC, Nickname ASC LIMIT 5'''
     cursor.execute(query)
     score_details = cursor.fetchall()
 

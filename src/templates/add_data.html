@@ -10,6 +10,7 @@
         .fa-times {
             color: red;
         }
+
         .female-row {
             background-color: rgba(247, 151, 247, 0.2);
         }
@@ -48,7 +49,7 @@
                     <a class="dropdown-item" href="/rating/pharaoh_hound">Фараонова собака</a>
                 </div>
             </li>
-             <li class="nav-item dropdown">
+            <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Топ-5</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -182,6 +183,32 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="location">Место/Ранг соревнований:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <input type="text" class="form-control" id="location" name="location" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-3">
+                        <label for="breed">Порода:</label>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="form-group">
+                            <select class="form-control" id="breed" name="breed" required>
+                                <option value="Уиппеты">Уиппеты</option>
+                                <option value="Левретки">Левретки</option>
+                                <option value="Фараоны">Фараоны</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-success">Добавить</button>
             </form>
         </div>
@@ -268,6 +295,14 @@
                 <input type="checkbox" id="columnBreedLink" class="column-checkbox">
                 <label for="columnBreedLink">Ссылка на Breed Archive</label>
             </th>
+            <th>
+                <input type="checkbox" id="columnLocation" class="column-checkbox">
+                <label for="columnLocation">Место совернования</label>
+            </th>
+            <th>
+                <input type="checkbox" id="columnBreed" class="column-checkbox">
+                <label for="columnBreed">Порода</label>
+            </th>
         </tr>
         </thead>
     </table>
@@ -343,6 +378,22 @@
                         Ссылка на Breed Archive
                     </div>
                 </th>
+                <th data-column="columnLocation">
+                    <div class="d-flex align-items-center">
+                        Место соревнования
+                    </div>
+                </th>
+                <th data-column="columnBreed">
+                    <div class="d-flex align-items-center">
+                        Порода
+                        <select class="form-control ml-2" id="breedDropdown">
+                            <option value="all" selected>Все</option>
+                            <option value="Уиппеты">Уиппеты</option>
+                            <option value="Левретки">Левретки</option>
+                            <option value="Фараоны">Фараоны</option>
+                        </select>
+                    </div>
+                </th>
             </tr>
             </thead>
             <tbody id="dogData">
@@ -364,15 +415,23 @@
 
     <h1 style="text-align: center"> Дополнительно </h1>
     <div class="text-center">
-        <button class="btn btn-primary mt-3 check-database-with-links" id="check_database" name="check_database">Проверить данные с ссылками (долго)</button>
-        <button class="btn btn-primary mt-3 check-database-without-links" id="check_database" name="check_database">Проверить данные без ссылкок (быстро)</button>
+        <button class="btn btn-primary mt-3 check-database-with-links" id="check_database" name="check_database">
+            Проверить данные с ссылками (долго)
+        </button>
+        <button class="btn btn-primary mt-3 check-database-without-links" id="check_database" name="check_database">
+            Проверить данные без ссылкок (быстро)
+        </button>
         <form action="/add-data" method="post" class="mb-3">
             <div class="row">
                 <div class="col-md-6 mb-5">
-                    <button type="submit" id="reset_ignored" name="reset_ignored" class="btn btn-danger mt-3">Сбросить информацию об ошибках</button>
+                    <button type="submit" id="reset_ignored" name="reset_ignored" class="btn btn-danger mt-3">Сбросить
+                        информацию об ошибках
+                    </button>
                 </div>
                 <div class="col-md-6 mb-5">
-                    <button class="btn btn-success mt-3 autofill-data" id="autofill_data" name="autofill_data">Автозаполнение данных</button>
+                    <button class="btn btn-success mt-3 autofill-data" id="autofill_data" name="autofill_data">
+                        Автозаполнение данных
+                    </button>
                 </div>
             </div>
         </form>
@@ -449,7 +508,8 @@
     </div>
 </div>
 
-<div class="modal fade" id="checkDatabase" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+<div class="modal fade" id="checkDatabase" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel"
+     aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -492,7 +552,7 @@
 
 <script>
     var count = 0;
-    var SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows;
+    var SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, SelectedLocation, SelectedBreed, AllRows;
 
     var lastSubmitTime = 0;
 
@@ -533,7 +593,6 @@
             }
         });
     }
-
 
     saveFormValues();
     loadFormValues();
@@ -584,6 +643,8 @@
             score: row.find("td:eq(7)").text(),
             link: row.find("td:eq(8)").text(),
             BreedLink: row.find("td:eq(9)").text(),
+            location: row.find("td:eq(10)").text(),
+            breed: row.find("td:eq(11)").text(),
         };
 
         $.ajax({
@@ -623,16 +684,18 @@
         let initialNameSearch = $("#nameSearch").val();
         let initialRatingSelection = $("#ratingDropdown").val();
         let initialType = $("#typeDropdown").val();
-        loadData('', '', initialType, initialSexSelection, initialNameSearch, initialRatingSelection, false);
+        loadData('', '', initialType, initialSexSelection, initialNameSearch, initialRatingSelection, 'all', 'all' ,false);
     });
 
-    function loadData(selectedID, selectedDate, selectedType, selectedSex, nameSearch, selectedRating, allRows = false) {
+    function loadData(selectedID, selectedDate, selectedType, selectedSex, nameSearch, selectedRating, selectedLocation, selectedBreed, allRows = false) {
         SelectedID = selectedID;
         SelectedDate = selectedDate;
         SelectedType = selectedType;
         SelectedSex = selectedSex;
         NameSearch = nameSearch;
         SelectedRating = selectedRating;
+        SelectedLocation = selectedLocation;
+        SelectedBreed = selectedBreed;
         AllRows = allRows;
         $.ajax({
             url: "/get-all-data",
@@ -644,6 +707,8 @@
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
                 selectedRating: selectedRating,
+                selectedLocation: selectedLocation,
+                selectedBreed: selectedBreed,
                 allRows: allRows
             }),
             contentType: "application/json; charset=utf-8",
@@ -668,6 +733,8 @@
                     let checkboxScore = document.getElementById("columnScore");
                     let checkboxLink = document.getElementById("columnLink");
                     let checkboxBreedLink = document.getElementById("columnBreedLink");
+                    let checkboxLocation = document.getElementById("columnLocation");
+                    let checkboxBreed = document.getElementById("columnBreed");
 
                     for (let i = 0; i < data.length; i++) {
                         let currentScore = parseInt(data[i].score);
@@ -733,6 +800,16 @@
                         } else {
                             tableContent += '<td contenteditable="true" style="display: none">' + data[i].breedLink + '</td>';
                         }
+                        if (checkboxLocation.checked) {
+                            tableContent += '<td contenteditable="true">' + data[i].location + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].location + '</td>';
+                        }
+                        if (checkboxBreed.checked) {
+                            tableContent += '<td contenteditable="true">' + data[i].breed + '</td>';
+                        } else {
+                            tableContent += '<td contenteditable="true" style="display: none">' + data[i].breed + '</td>';
+                        }
                         tableContent += '</tr>';
                     }
 
@@ -741,12 +818,32 @@
                         $("#maxScoreHolder").text(maxScore);
                     }
 
+                    let checkboxes = [
+                        document.getElementById("columnDate"),
+                        document.getElementById("columnID"),
+                        document.getElementById("columnPosition"),
+                        document.getElementById("columnType"),
+                        document.getElementById("columnSex"),
+                        document.getElementById("columnNickname"),
+                        document.getElementById("columnMaxPosition"),
+                        document.getElementById("columnScore"),
+                        document.getElementById("columnLink"),
+                        document.getElementById("columnBreedLink"),
+                        document.getElementById("columnLocation"),
+                        document.getElementById("columnBreed")
+                    ];
+                    let selectedCheckboxes = checkboxes.filter(checkbox => checkbox.checked);
+
                     if (allRows) {
                         $("#showAllButton").hide();
                         $("#showLessButton").show();
                     } else {
                         if (data.length === 9) {
-                            tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                            tableContent += '<tr>';
+                            selectedCheckboxes.forEach(checkbox => {
+                                tableContent += '<td> ... </td>';
+                            });
+                            tableContent += '</tr>';
                         }
                         $("#showAllButton").show();
                         $("#showLessButton").hide();
@@ -792,7 +889,7 @@
         let row = $(this).closest('tr');
         let id = $(this).data('id');
         let error = $(this).data('error');
-        let updatedData = { id: id, error: error };
+        let updatedData = {id: id, error: error};
 
         $.ajax({
             url: "/ignore-data",
@@ -805,9 +902,9 @@
             },
             error: function (error) {
                 row.addClass("bg-danger");
-            setTimeout(function () {
-                row.removeClass("bg-danger");
-            }, 1500);
+                setTimeout(function () {
+                    row.removeClass("bg-danger");
+                }, 1500);
             },
         });
     });
@@ -870,7 +967,7 @@
         } else {
             $(`th[data-column="${columnName}"]`).hide();
         }
-        loadData(SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, AllRows);
+        loadData(SelectedID, SelectedDate, SelectedType, SelectedSex, NameSearch, SelectedRating, SelectedLocation, SelectedBreed, AllRows);
     });
 
     function updateData(allRows) {
@@ -880,7 +977,10 @@
         let selectedRating = $("#ratingDropdown").val();
         let selectedDate = $("#dateSelection").val();
         let selectedID = $("#idSearch").val();
-        loadData(selectedID, selectedDate, selectedType, selectedSex, nameSearch, selectedRating, allRows);
+        {#let selectedLocation = $("#idSearch").val();#}
+        let selectedBreed = $("#breedDropdown").val();
+        console.log(selectedBreed)
+        loadData(selectedID, selectedDate, selectedType, selectedSex, nameSearch, selectedRating, 'all', selectedBreed, allRows);
     }
 
     $("#nameSearch").on('input', function () {
@@ -911,7 +1011,11 @@
         updateData(false);
     });
 
-    $("#dateSelection").on("change", function() {
+    $("#dateSelection").on("change", function () {
+        updateData(false);
+    });
+
+    $("#breedDropdown").change(function () {
         updateData(false);
     });
 </script>

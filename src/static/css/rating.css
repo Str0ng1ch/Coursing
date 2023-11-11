@@ -1,0 +1,22 @@
+.footer {
+    background-color: #f8f9fa;
+    padding: 20px 0;
+    margin-top: 40px;
+}
+
+.female-row {
+    background-color: rgba(247, 151, 247, 0.2);
+}
+
+.male-row {
+    background-color: rgba(196, 227, 242, 0.3);
+}
+
+.table-header {
+    background-color: #D1F2A5;
+}
+
+#infoModal .modal-dialog {
+    max-width: 59%;
+    min-width: 800px;
+}
