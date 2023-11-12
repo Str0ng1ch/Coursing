@@ -16,7 +16,8 @@ from src.make_ratings import make_rating
 # DATABASE, TABLE = "u2255198_coursing", "results_test"
 DATABASE, TABLE = "coursing", "results"
 ADMIN_USERNAME, ADMIN_PASSWORD = "tanya_admin", "p0n4ik"
-VIEW_USERNAME, VIEW_PASSWORD = "view_access", "Lur3C0urs1ngP@ssw0rd"
+VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD = "view_access", "l3vr3tk1P@ssw0rd"
+VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD = "view_access", "password_phara0h_h0und"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
 application = Flask(__name__)
@@ -48,12 +49,12 @@ def requires_auth(f):
     return decorated
 
 
-def requires_auth_view(f):
+def requires_auth_view(f, username, password):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
 
-        if (auth and ((auth.username == VIEW_USERNAME and auth.password == VIEW_PASSWORD)
+        if (auth and ((auth.username == username and auth.password == password)
                       or (auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD))):
             return f(*args, **kwargs)
 
@@ -63,7 +64,6 @@ def requires_auth_view(f):
             {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
     return decorated
-
 
 @application.route('/')
 def index():
@@ -75,9 +75,9 @@ def rating(param):
     if param == 'whippets':
         return render_template('rating.html', param=param)
     elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template)('rating.html', param=param)
+        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('rating.html', param=param)
     elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template)('rating.html', param=param)
+        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('rating.html', param=param)
 
 
 @application.route('/best/<param>')
@@ -85,9 +85,9 @@ def best(param):
     if param == 'whippets':
         return render_template('best.html', param=param)
     elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template)('best.html', param=param)
+        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('best.html', param=param)
     elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template)('best.html', param=param)
+        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('best.html', param=param)
 
 
 @application.route('/explanations')
@@ -496,7 +496,7 @@ def add_data_from_form():
         breed = 'Малая итальянская борзая (Левретка)'
     elif breed == 'Фараоны':
         breed = 'Фараонова собака'
-        
+
     cur = mysql.connection.cursor()
     try:
         cur.execute(
