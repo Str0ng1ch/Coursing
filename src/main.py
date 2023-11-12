@@ -208,6 +208,13 @@ def get_all_data():
     selected_breed = request.json['selectedBreed']
     all_rows = request.json.get('allRows', False)
 
+    if selected_breed == 'Уиппеты':
+        selected_breed = 'Уиппет'
+    elif selected_breed == 'Левретки':
+        selected_breed = 'Малая итальянская борзая (Левретка)'
+    elif selected_breed == 'Фараоны':
+        selected_breed = 'Фараонова собака'
+
     cur = mysql.connection.cursor()
     base_query = f"""SELECT * FROM {DATABASE}.{TABLE}"""
     conditions = []
