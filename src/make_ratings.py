@@ -7,7 +7,7 @@ try:
 except ImportError:
     from bs4 import BeautifulSoup
 
-DATABASE, TABLE = "coursing", "results_test"
+DATABASE, TABLE = "coursing", "results"
 # config = {
 #     'user': "u2255198_artem",
 #     'password': "00zEbyTI3y5avEot",
@@ -22,7 +22,7 @@ config = {
 }
 
 
-def parse_data(soup):
+def parse_data(soup, breed):
     all_dogs = []
     all_rows = soup.find_all('tr', align="center", bgcolor="#ffffff")
     for i, row in enumerate(all_rows):
@@ -30,7 +30,7 @@ def parse_data(soup):
             all_cols = row.find_all('td')
             dog = []
             try:
-                if all_cols[2].get_text() == 'Уиппет':
+                if all_cols[2].get_text() in breed:
                     dog.append(int(all_cols[0].get_text()))
                     dog.append(all_cols[3].get_text())
                     dog.append(all_cols[4].get_text())
@@ -45,6 +45,7 @@ def parse_data(soup):
                             dog.append(names[0].strip() + "/" + names[1].strip())
                         else:
                             dog.append(names[1].strip() + "/" + names[0].strip())
+                    dog.append(all_cols[2].get_text())
                     all_dogs.append(dog)
             except ValueError:
                 pass
@@ -81,23 +82,23 @@ def insert_into_database(all_dogs, date, url):
     cursor = connection.cursor()
 
     insert_query = (
-        f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, max_position, score, link, breedarchive_link, ignored) VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s)")
+        f"INSERT INTO {DATABASE}.{TABLE} (Date, Position, Type, Sex, Nickname, breed, max_position, score, location, link, breedarchive_link, ignored) VALUES (%s, %s, %s, %s, UPPER(%s), %s, %s, %s, %s, %s, %s, %s)")
     for row in all_dogs:
-        if len(row) == 6:
-            cursor.execute(insert_query, [date] + row + [url] + ['', ''])
+        if len(row) == 7:
+            cursor.execute(insert_query, [date] + row + ['', url] + ['', ''])
 
     connection.commit()
     cursor.close()
     connection.close()
 
 
-def make_rating(url):
+def make_rating(url, breed):
     page = urlopen(url)
     soup = BeautifulSoup(page, features="html.parser")
 
     date_pattern = r"\d{4}-\d{2}-\d{2}"
     date = re.search(date_pattern, url).group()
 
-    all_dogs = parse_data(soup)
+    all_dogs = parse_data(soup, breed)
     all_dogs = insert_all_max_positions(all_dogs)
     insert_into_database(all_dogs, date, url)

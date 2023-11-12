@@ -48,6 +48,23 @@ def requires_auth(f):
     return decorated
 
 
+def requires_auth_view(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+
+        if (auth and ((auth.username == VIEW_USERNAME and auth.password == VIEW_PASSWORD)
+                      or (auth.username == ADMIN_USERNAME and auth.password == ADMIN_PASSWORD))):
+            return f(*args, **kwargs)
+
+        return Response(
+            'Could not verify your access level for that URL.\n'
+            'You have to login with proper credentials.', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+    return decorated
+
+
 @application.route('/')
 def index():
     return render_template('index.html')
@@ -57,16 +74,20 @@ def index():
 def rating(param):
     if param == 'whippets':
         return render_template('rating.html', param=param)
-    else:
-        return render_template('developing.html')
+    elif param == 'italian_greyhounds':
+        return requires_auth_view(render_template)('rating.html', param=param)
+    elif param == 'pharaoh_hound':
+        return requires_auth_view(render_template)('rating.html', param=param)
 
 
 @application.route('/best/<param>')
 def best(param):
     if param == 'whippets':
         return render_template('best.html', param=param)
-    else:
-        return render_template('developing.html')
+    elif param == 'italian_greyhounds':
+        return requires_auth_view(render_template)('best.html', param=param)
+    elif param == 'pharaoh_hound':
+        return requires_auth_view(render_template)('best.html', param=param)
 
 
 @application.route('/explanations')
@@ -137,7 +158,11 @@ def get_partial_data():
     param = request.json['paramValue']
 
     if param == 'whippets':
-        param = 'Уиппеты'
+        param = 'Уиппет'
+    elif param == 'italian_greyhounds':
+        param = 'Малая итальянская борзая (Левретка)'
+    elif param == 'pharaoh_hound':
+        param = 'Фараонова собака'
 
     cur = mysql.connection.cursor()
     base_query = f"""SELECT * FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount, Breed
@@ -282,9 +307,20 @@ def add_data_from_excel():
 
 def run_script():
     link = request.form.get('link', '')
+    breed = request.form.get('breed', '')
+
+    if breed == 'all':
+        breed_list = ['Уиппет', 'Малая итальянская борзая (Левретка)', 'Фараонова собака']
+    elif breed == 'Уиппеты':
+        breed_list = ['Уиппет']
+    elif breed == 'Левретки':
+        breed_list = ['Малая итальянская борзая (Левретка)']
+    else:
+        breed_list = ['Фараонова собака']
+
     message = None
     try:
-        make_rating(link)
+        make_rating(link, breed_list)
         message = f"Данные успешно внесены из {link}"
     except Exception as e:
         message = f"Ошибка при занесении данных из {link}. \nОшибка: {e}"
@@ -562,6 +598,8 @@ def update_data():
     score = updated_data['score']
     link = updated_data['link']
     breed_link = updated_data['BreedLink']
+    breed = updated_data['breed']
+    location = updated_data['location']
 
     formatted_date = f"{date[2]}-{date[1]}-{date[0]}"
     cur = mysql.connection.cursor()
@@ -577,12 +615,14 @@ def update_data():
               max_position = %s,
               Score = %s,
               link = %s,
-              breedarchive_link = %s
+              breedarchive_link = %s,
+              breed = %s,
+              location = %s
             WHERE
               ID = %s
             """
         cur.execute(update_query,
-                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, row_id))
+                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, breed, location, row_id))
         mysql.connection.commit()
         return jsonify()
     except Exception:
@@ -780,11 +820,17 @@ def ignore_data():
         cursor.close()
 
 
-def get_score_details_sections(dog_type, sex):
+def get_score_details_sections(breed, dog_type, sex):
+    if breed == 'whippets':
+        breed = 'Уиппет'
+    elif breed == 'italian_greyhounds':
+        breed = 'Малая итальянская борзая (Левретка)'
+    elif breed == 'pharaoh_hound':
+        breed = 'Фараонова собака'
     cursor = mysql.connection.cursor()
-    query = f'''SELECT Nickname, TotalScore, breedarchive_link, Type, Sex, RecordCount FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount
+    query = f'''SELECT Nickname, TotalScore, breedarchive_link, Type, Sex, RecordCount FROM (SELECT Type, Sex, Nickname, breedarchive_link, SUM(Score) AS TotalScore, COUNT(*) AS RecordCount, Breed
                                     FROM {DATABASE}.{TABLE} 
-                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры'
+                                    WHERE Date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR) AND Type != 'Юниоры' AND Breed = '{breed}'
                                     GROUP BY Type, Sex, Nickname, breedarchive_link
                                     ) AS sub WHERE Type = "{dog_type}" AND Sex = "{sex}" ORDER BY TotalScore DESC, RecordCount ASC, Nickname ASC LIMIT 5'''
     cursor.execute(query)
@@ -797,22 +843,26 @@ def get_score_details_sections(dog_type, sex):
 
 @application.route("/get-score-details-section1", methods=["GET"])
 def get_score_details_section1():
-    return get_score_details_sections("Стандартный", "Кобель")
+    breed = request.args.get('breed', type=str)
+    return get_score_details_sections(breed, "Стандартный", "Кобель")
 
 
 @application.route("/get-score-details-section2", methods=["GET"])
 def get_score_details_section2():
-    return get_score_details_sections("Стандартный", "Сука")
+    breed = request.args.get('breed', type=str)
+    return get_score_details_sections(breed, "Стандартный", "Сука")
 
 
 @application.route("/get-score-details-section3", methods=["GET"])
 def get_score_details_section3():
-    return get_score_details_sections("Стандартный-спринтеры", "Кобель")
+    breed = request.args.get('breed', type=str)
+    return get_score_details_sections(breed, "Стандартный-спринтеры", "Кобель")
 
 
 @application.route("/get-score-details-section4", methods=["GET"])
 def get_score_details_section4():
-    return get_score_details_sections("Стандартный-спринтеры", "Сука")
+    breed = request.args.get('breed', type=str)
+    return get_score_details_sections(breed, "Стандартный-спринтеры", "Сука")
 
 
 error_handlers = {

@@ -1,6 +1,3 @@
-let urlParts = window.location.href.split('/');
-let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
-
 function loadTableData(tableId, data, genderClass) {
     let rating = 0;
     let visible_rating = 1;
@@ -23,9 +20,18 @@ function loadTableData(tableId, data, genderClass) {
     $("#" + tableId).html(tableContent);
 }
 
+function getParamValue() {
+    let urlParts = window.location.href.split('/');
+    let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+    return {
+        breed: paramValue
+    };
+}
+
 $.ajax({
     url: '/get-score-details-section1',
     method: 'GET',
+    data: getParamValue(),
     success: function (data) {
         loadTableData('section1-data', data, 'male-row');
     }
@@ -34,6 +40,7 @@ $.ajax({
 $.ajax({
     url: '/get-score-details-section2',
     method: 'GET',
+    data: getParamValue(),
     success: function (data) {
         loadTableData('section2-data', data, 'female-row');
     }
@@ -42,6 +49,7 @@ $.ajax({
 $.ajax({
     url: '/get-score-details-section3',
     method: 'GET',
+    data: getParamValue(),
     success: function (data) {
         loadTableData('section3-data', data, 'male-row');
     }
@@ -50,6 +58,7 @@ $.ajax({
 $.ajax({
     url: '/get-score-details-section4',
     method: 'GET',
+    data: getParamValue(),
     success: function (data) {
         loadTableData('section4-data', data, 'female-row');
     }
