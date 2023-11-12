@@ -490,6 +490,13 @@ def add_data_from_form():
     location = request.form['location']
     breed = request.form['breed']
 
+    if breed == 'Уиппеты':
+        breed = 'Уиппет'
+    elif breed == 'Левретки':
+        breed = 'Малая итальянская борзая (Левретка)'
+    elif breed == 'Фараоны':
+        breed = 'Фараонова собака'
+        
     cur = mysql.connection.cursor()
     try:
         cur.execute(

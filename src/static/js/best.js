@@ -38,41 +38,18 @@ $(document).ready(function () {
     }
 });
 
-$.ajax({
-    url: '/get-score-details-section1',
-    method: 'GET',
-    data: getParamValue(),
-    success: function (data) {
-        loadTableData('section1-data', data, 'male-row');
-    }
-});
-
-$.ajax({
-    url: '/get-score-details-section2',
-    method: 'GET',
-    data: getParamValue(),
-    success: function (data) {
-        loadTableData('section2-data', data, 'female-row');
-    }
-});
-
-$.ajax({
-    url: '/get-score-details-section3',
-    method: 'GET',
-    data: getParamValue(),
-    success: function (data) {
-        loadTableData('section3-data', data, 'male-row');
-    }
-});
-
-$.ajax({
-    url: '/get-score-details-section4',
-    method: 'GET',
-    data: getParamValue(),
-    success: function (data) {
-        loadTableData('section4-data', data, 'female-row');
-    }
-});
+let sections = ['section1', 'section2', 'section3', 'section4'];
+for (let i = 0; i < sections.length; i++) {
+    $.ajax({
+        url: '/get-score-details-' + sections[i],
+        method: 'GET',
+        data: getParamValue(),
+        success: function (data) {
+            let genderRow = (i % 2 === 0) ? 'male-row' : 'female-row';
+            loadTableData(sections[i] + '-data', data, genderRow);
+        }
+    });
+}
 
 $(document).on("click", ".score-info", function () {
     let score = $(this).data('score');
