@@ -1,3 +1,6 @@
+let urlParts = window.location.href.split('/');
+let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+
 function loadTableData(tableId, data, genderClass) {
     let rating = 0;
     let visible_rating = 1;
@@ -21,12 +24,19 @@ function loadTableData(tableId, data, genderClass) {
 }
 
 function getParamValue() {
-    let urlParts = window.location.href.split('/');
-    let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
     return {
         breed: paramValue
     };
 }
+
+$(document).ready(function () {
+    let conditionalSection = document.getElementById('conditional-section');
+    if (paramValue === 'pharaoh_hound') {
+        conditionalSection.style.display = 'none';
+        document.getElementById('standard_male').innerHTML = "Кобели"
+        document.getElementById('standard_female').innerHTML = "Суки"
+    }
+});
 
 $.ajax({
     url: '/get-score-details-section1',
