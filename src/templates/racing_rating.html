@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Курсинг РФ</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="icon" href="../static/images/icon.ico">
+    <link rel="stylesheet" href="../static/css/rating.css">
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <style>
+        .tableTypeButton {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font-family: inherit;
+            font-size: inherit;
+            color: inherit;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .tableTypeButton.active {
+            font-size: 30px;
+        }
+
+        .tableTypeButton:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <a class="navbar-brand" href="/">
+        <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
+        Курсинг РФ
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/">Главная</a>
+            </li>
+            <li class="nav-item dropdown active">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рейтинг</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="/racing-rating/whippets">Уиппеты</a>
+                </div>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Топ-5</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                    <a class="dropdown-item" href="/racing-best/whippets">Уиппеты</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <ul class="navbar-nav ml-auto">
+        <li class="nav-item">
+            <p class="email"><i class="fas fa-envelope"></i> lurecoursing@mail.ru</p>
+        </li>
+    </ul>
+</nav>
+
+<div class="container mt-5">
+    <div style=" display: flex; justify-content: center; align-items: center;">
+        <button type="button" class="tableTypeButton" style="margin-right: 50px" data-value="results">Результаты по
+            соревнованию
+        </button>
+        <button type="button" class="tableTypeButton" data-value="overall">Общая таблица</button>
+    </div>
+
+
+    <table class="table table-bordered" id="overall_table">
+        <thead>
+        <tr class="table-header">
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="ratingDropdown">Рейтинг</label>
+                    <select class="form-control ml-2" id="ratingDropdown" style="display: none">
+                        <option value="all" selected>Все</option>
+                        <option value="0-9">0-9</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    <label for="sexDropdown">Пол</label>
+                    <select class="form-control ml-2" id="sexDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="Кобель">Кобель</option>
+                        <option value="Сука">Сука</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="typeDropdown">Класс</label>
+                    <select class="form-control ml-2" id="typeDropdown">
+                        <option value="all" selected>Все</option>
+                        <option value="Стандартный">Стандартный</option>
+                        <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    <label for="nameSearch">Кличка</label>
+                    <input type="text" class="form-control ml-2" id="nameSearch" placeholder="Поиск...">
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    <label for="scoreDropdown">Баллы</label>
+                    <select class="form-control ml-2" id="scoreDropdown">
+                        <option value="all" selected>Все</option>
+                    </select>
+                </div>
+            </th>
+        </tr>
+        </thead>
+        <tbody id="dogData">
+        </tbody>
+    </table>
+
+    <button id="just_click"></button>
+    <table class="table table-bordered" id="results_table" style="display: none">
+        <thead>
+        <tr class="table-header">
+            <th>
+                <div class="d-flex align-items-center">
+                    <label for="sexDropdown_racing">Пол</label>
+                    <select class="form-control ml-2" id="sexDropdown_racing">
+                        <option value="all" selected>Все</option>
+                        <option value="Кобель">Кобель</option>
+                        <option value="Сука">Сука</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="typeDropdown_racing">Класс</label>
+                    <select class="form-control ml-2" id="typeDropdown_racing">
+                        <option value="all" selected>Все</option>
+                        <option value="Стандартный">Стандартный</option>
+                        <option value="Стандартный-спринтеры">Стандартный-спринтеры</option>
+                    </select>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center">
+                    <label for="nameSearch_racing">Кличка</label>
+                    <input type="text" class="form-control ml-2" id="nameSearch_racing" placeholder="Поиск...">
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="time_1">Время 1</label>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="time_2">Время 2</label>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="time_3">Время 3</label>
+                </div>
+            </th>
+            <th>
+                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                    <label for="title">Титул</label>
+                </div>
+            </th>
+        </tr>
+        </thead>
+        <tbody id="resultsData">
+        </tbody>
+    </table>
+
+    <div id="noResultsMessage" class="text-center mt-3" style="display: none;">
+        Ничего не найдено. <br>
+        Попробуйте написать имя на другом языке или поставить другие параметры.
+    </div>
+</div>
+
+
+<div class="text-center">
+    <button class="btn btn-primary mt-3" id="showAllButton">Показать больше</button>
+    <button class="btn btn-secondary mt-3 ml-2" id="showLessButton">Показать меньше</button>
+</div>
+
+<div class="modal fade" id="infoModal" tabindex="-1" role="dialog" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="infoModalLabel">Информация о баллах <br></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr class="table-header">
+                        <th>№</th>
+                        <th>Дата соревнований</th>
+                        <th>Место/Ранг соревнований</th>
+                        <th>Место</th>
+                        <th>Количество участников в классе</th>
+                        <th>Баллы</th>
+                        <th>Источник</th>
+                    </tr>
+                    </thead>
+                    <tbody id="modalTableBody">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer d-flex justify-content-center">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" id="close_button">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="maxScoreHolder" style="display: none;">0</div>
+<div id="maxRatingHolder" style="display: none">0</div>
+
+<footer class="footer" id="footer" style="display: inherit">
+    <div class="container text-center">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h5>Контакты</h5>
+                <p class="email"><i class="fas fa-envelope"></i> lurecoursing@mail.ru</p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    let ascending = true;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const buttons = document.querySelectorAll('.tableTypeButton');
+
+        function handleClick(event) {
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        buttons.forEach(button => {
+            button.addEventListener('click', handleClick);
+        });
+    });
+
+    const tableTypeButtons = document.querySelectorAll('.tableTypeButton');
+
+    function handleButtonClick(event) {
+        const selectedValue = event.target.getAttribute('data-value');
+        if (selectedValue === 'results') {
+            let selectedType = $("#typeDropdown_racing").val();
+            let selectedSex = $("#sexDropdown_racing").val();
+            let nameSearch = $("#nameSearch_racing").val();
+            let urlParts = window.location.href.split('/');
+            let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+            loadResultsData(paramValue, selectedType, selectedSex, nameSearch)
+            document.getElementById('overall_table').style.display = 'None'
+            document.getElementById('results_table').style.display = 'revert'
+        } else if (selectedValue === 'overall') {
+            document.getElementById('results_table').style.display = 'None'
+            document.getElementById('overall_table').style.display = 'revert'
+            let initialRating = $("#ratingDropdown").val();
+            let selectedType = $("#typeDropdown").val();
+            let selectedSex = $("#sexDropdown").val();
+            let nameSearch = $("#nameSearch").val();
+            let selectedScore = $("#scoreDropdown").val();
+            let urlParts = window.location.href.split('/');
+            let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+            loadOverallData(paramValue, initialRating, selectedType, selectedSex, nameSearch, selectedScore, false);
+        }
+    }
+
+    tableTypeButtons.forEach(button => {
+        button.addEventListener('click', handleButtonClick);
+    });
+
+    function updateDropdown(maxScore) {
+        let dropdownOptions = '';
+        const step = 10;
+        dropdownOptions += '<option value="all" selected>Все</option>'
+        for (let i = 0; i <= maxScore; i += step) {
+            dropdownOptions += '<option value="' + i + '-' + (i + step - 1) + '">' + i + '-' + (i + step - 1) + '</option>';
+        }
+
+        $("#scoreDropdown").html(dropdownOptions);
+    }
+
+    function updateRatingDropdown(maxRating) {
+        let dropdownOptions = '';
+        const step = 10;
+        dropdownOptions += '<option value="all" selected>Все</option>'
+        for (let i = 0; i <= maxRating; i += step) {
+            dropdownOptions += '<option value="' + i + '-' + (i + step - 1) + '">' + i + '-' + (i + step - 1) + '</option>';
+        }
+
+        $("#ratingDropdown").html(dropdownOptions);
+    }
+
+    $(document).ready(function () {
+        let initialRating = $("#ratingDropdown").val();
+        let initialSexSelection = $("#sexDropdown").val();
+        let initialNameSearch = $("#nameSearch").val();
+        let initialScore = $("#scoreDropdown").val();
+        let initialType = $("#typeDropdown").val();
+        let urlParts = window.location.href.split('/');
+        let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+        loadOverallData(paramValue, initialRating, initialType, initialSexSelection, initialNameSearch, initialScore, false);
+
+        let ascending = true; // Переменная, чтобы отслеживать текущее состояние сортировки (true - по возрастанию, false - по убыванию)
+
+    });
+
+    function loadResultsData(paramValue, selectedSex, selectedType, nameSearch) {
+        $.ajax({
+            url: "/get-results-data",
+            type: "POST",
+            data: JSON.stringify({
+                paramValue: paramValue,
+                selectedType: selectedType,
+                selectedSex: selectedSex,
+                nameSearch: nameSearch,
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                console.log(data);
+                let tableContent = '';
+                if (data.length === 0) {
+                    $("#noResultsMessage").show();
+                    $("#showAllButton").hide();
+                    $("#showLessButton").hide();
+                    $("#resultsData").html(tableContent);
+                } else {
+                    $("#noResultsMessage").hide();
+                    for (let i = 0; i < data.length; i++) {
+                        let genderClass = data[i].sex === 'сука' ? 'female-row' : 'male-row';
+                        tableContent += '<tr class="' + genderClass + '">';
+                        tableContent += '<td>' + data[i].sex + '</td>';
+                        tableContent += '<td>' + data[i].type + '</td>';
+                        tableContent += '<td>' + data[i].nickname + '</td>';
+                        {#tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';#}
+                        tableContent += '<td>' + data[i].time_1 + '</td>';
+                        tableContent += '<td>' + data[i].time_2 + '</td>';
+                        tableContent += '<td>' + data[i].time_3 + '</td>';
+                        tableContent += '<td>' + data[i].title + '</td>';
+                        tableContent += '</tr>';
+
+                    }
+                }
+
+                $("#resultsData").html(tableContent);
+            }
+        })
+    }
+
+    function loadOverallData(paramValue, selectedRating, selectedType, selectedSex, nameSearch, selectedScore, allRows = false) {
+        $.ajax({
+            url: "/get-partial-data",
+            type: "POST",
+            data: JSON.stringify({
+                selectedRating: selectedRating,
+                selectedType: selectedType,
+                selectedSex: selectedSex,
+                paramValue: paramValue,
+                allRows: allRows
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+                let tableContent = '';
+                let maxScore = 0;
+                let maxRating = 0;
+                let selectedRating = document.getElementById("ratingDropdown").value;
+                if (data.length === 0) {
+                    $("#noResultsMessage").show();
+                    $("#showAllButton").hide();
+                    $("#showLessButton").hide();
+                    $("#dogData").html(tableContent);
+                } else {
+                    $("#noResultsMessage").hide();
+                    let rating = 0;
+                    let visible_rating = 1;
+                    let rows_count = 0;
+
+                    for (let i = 0; i < data.length; i++) {
+                        rating += 1;
+                        if (i !== 0 && data[i - 1].TotalScore !== data[i].TotalScore) {
+                            visible_rating = rating
+                        }
+
+                        let currentScore = parseInt(data[i].TotalScore);
+                        if (currentScore > maxScore) {
+                            maxScore = currentScore;
+                        }
+                        if ((i + 1) > maxRating) {
+                            maxRating = (i + 1);
+                        }
+                        let min_score;
+                        let max_score;
+                        if (selectedScore === 'all') {
+                            min_score = 0;
+                            max_score = 1000;
+                        } else {
+                            min_score = parseInt(selectedScore.split('-')[0]);
+                            max_score = parseInt(selectedScore.split('-')[1]);
+                        }
+
+                        if (data[i].name.includes(nameSearch.toUpperCase()) &&
+                            (currentScore <= max_score && currentScore >= min_score)) {
+                            rows_count += 1
+                            if (allRows === false && rows_count === 10)
+                                break;
+
+                            let breed_link = data[i].breedLink;
+                            let name = data[i].name.replace("/", "<br>");
+                            let genderClass = data[i].sex === 'Сука' ? 'female-row' : 'male-row';
+
+                            tableContent += '<tr class="' + genderClass + '">';
+                            if (selectedRating === 'all' || (parseInt(selectedRating.split('-')[1]) >= (i + 1) && (i + 1) >= parseInt(selectedRating.split('-')[0]))) {
+                                tableContent += '<td>' + visible_rating + '</td>';
+                                tableContent += '<td>' + data[i].sex + '</td>';
+                                tableContent += '<td>' + data[i].type + '</td>';
+                                tableContent += '<td><a href="' + breed_link + '" style="text-decoration: underline" target="_blank">' + name + '</a></td>';
+                                tableContent += '<td><div class="d-flex align-items-center">' + data[i].TotalScore + ' (' + data[i].RecordCount + ')' + '<a href="#" class="score-info ml-2" data-toggle="modal" data-target="#infoModal" data-score="' + name + ', ' + data[i].type + '"><i class="fas fa-question-circle" style="font-size: 27px"></i></a></div></td>';
+                                tableContent += '</tr>';
+                            }
+                        }
+                    }
+                    if (maxScore > $("#maxScoreHolder").text()) {
+                        updateDropdown(maxScore);
+                        $("#maxScoreHolder").text(maxScore);
+                    }
+                    if (maxRating > $("#maxRatingHolder").text()) {
+                        updateRatingDropdown(maxRating);
+                        $("#maxRatingHolder").text(maxRating);
+                    }
+
+                    if (allRows) {
+                        $("#showAllButton").hide();
+                        $("#showLessButton").show();
+                    } else {
+                        if (rows_count === 10) {
+                            tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                        }
+                        $("#showAllButton").show();
+                        $("#showLessButton").hide();
+                    }
+
+                    if (rows_count < 10) {
+                        $("#showAllButton").hide();
+                    }
+
+                    $("#dogData").html(tableContent);
+                }
+
+                $(".score-info").click(function () {
+                    let score = $(this).data('score');
+                    $.ajax({
+                        url: "/get-score-details",
+                        type: "POST",
+                        data: JSON.stringify({score: score}),
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        success: function (scoreDetails) {
+                            let modalTableContent = '';
+                            let max_rating = 0;
+                            let max_position = 0;
+                            for (let i = 0; i < scoreDetails.length; i++) {
+                                if (parseInt(scoreDetails[i][3]) > max_rating) {
+                                    max_rating = parseInt(scoreDetails[i][3]);
+                                    max_position = parseInt(scoreDetails[i][2]);
+                                }
+                                if (parseInt(scoreDetails[i][3]) === max_rating && parseInt(scoreDetails[i][2]) > max_position) {
+                                    max_position = parseInt(scoreDetails[i][2]);
+                                }
+                            }
+                            for (let i = 0; i < scoreDetails.length; i++) {
+                                let genderClass = scoreDetails[i][7] === 'Сука' ? 'female-row' : 'male-row';
+                                let inputDate = new Date(scoreDetails[i][0]);
+                                let day = inputDate.getUTCDate().toString().padStart(2, '0');
+                                let month = (inputDate.getUTCMonth() + 1).toString().padStart(2, '0');
+                                let year = inputDate.getUTCFullYear();
+                                let formattedDate = `${day}.${month}.${year}`;
+                                if (parseInt(scoreDetails[i][3]) === max_rating && parseInt(scoreDetails[i][2]) === max_position) {
+                                    modalTableContent += '<tr class="' + genderClass + '"><td>' + (i + 1) + '</td><td>' + formattedDate + '</td><td>' + scoreDetails[i][8] + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" style="font-weight: normal" target="_blank">Ссылка</a></td></tr>';
+                                } else {
+                                    modalTableContent += '<tr><td>' + (i + 1) + '</td><td>' + formattedDate + '</td><td>' + scoreDetails[i][8] + '</td><td>' + scoreDetails[i][1] + '</td><td>' + scoreDetails[i][2] + '</td><td>' + scoreDetails[i][3] + '</td><td><a href="' + scoreDetails[i][4] + '" style="font-weight: normal" target="_blank">Ссылка</a></td></tr>';
+                                }
+                            }
+                            $("#modalTableBody").html(modalTableContent);
+                            $("#infoModalLabel").html('Информация о баллах <br>' + '<a href="' + scoreDetails[0][6] + '" style="text-decoration: underline" target="_blank">' + scoreDetails[0][5] + '</a>');
+
+                            $("#infoModal").modal('show');
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    function updateData_racing(allRows) {
+        let selectedType = $("#typeDropdown_racing").val();
+        let selectedSex = $("#sexDropdown_racing").val();
+        let nameSearch = $("#nameSearch_racing").val();
+        let urlParts = window.location.href.split('/');
+        let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+        loadResultsData(paramValue, selectedSex, selectedType, nameSearch)
+    }
+
+    function updateData(allRows) {
+        let initialRating = $("#ratingDropdown").val();
+        let selectedType = $("#typeDropdown").val();
+        let selectedSex = $("#sexDropdown").val();
+        let nameSearch = $("#nameSearch").val();
+        let selectedScore = $("#scoreDropdown").val();
+        let urlParts = window.location.href.split('/');
+        let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+        loadOverallData(paramValue, initialRating, selectedType, selectedSex, nameSearch, selectedScore, allRows);
+    }
+
+    $('#just_click').on('click', function () {
+        console.log('click')
+        let rows = $('#resultsData tr').get(); // Получаем все строки таблицы
+        {#rows.shift(); // Удаляем заголовок таблицы из массива строк#}
+
+        rows.sort(function (rowA, rowB) {
+            let valueA = $(rowA).find('td:nth-child(4)').text(); // Получаем значение из ячейки "Время 1" строки A
+            let valueB = $(rowB).find('td:nth-child(4)').text(); // Получаем значение из ячейки "Время 1" строки B
+
+            if (ascending) {
+                return valueA.localeCompare(valueB); // Сортируем по возрастанию
+            } else {
+                return valueB.localeCompare(valueA); // Сортируем по убыванию
+            }
+        });
+
+        $.each(rows, function (index, row) {
+            $('#resultsData').append(row); // Вставляем отсортированные строки обратно в таблицу
+        });
+
+        ascending = !ascending; // Инвертируем состояние сортировки для следующего нажатия
+    });
+
+    $("#nameSearch_racing").on('input', function () {
+        updateData_racing(false);
+    });
+
+    $("#sexDropdown_racing").on('input', function () {
+        updateData_racing(false);
+    });
+
+    $("#typeDropdown_racing").on('input', function () {
+        updateData_racing(false);
+    });
+
+    $("#nameSearch").on('input', function () {
+        updateData(false);
+    });
+
+    $("#sexDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#scoreDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#ratingDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#typeDropdown").change(function () {
+        updateData(false);
+    });
+
+    $("#showAllButton").click(function () {
+        updateData(true);
+    });
+
+    $("#showLessButton").click(function () {
+        updateData(false);
+    });
+
+</script>
+</body>
+</html>

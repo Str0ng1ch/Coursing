@@ -65,9 +65,21 @@ def requires_auth_view(f, username, password):
 
     return decorated
 
+
 @application.route('/')
 def index():
     return render_template('index.html')
+
+
+@application.route('/racing')
+def racing():
+    return render_template('racing.html')
+
+
+@application.route('/racing-rating/<param>')
+def racing_rating(param):
+    if param == 'whippets':
+        return render_template('racing_rating.html')
 
 
 @application.route('/rating/<param>')
@@ -75,9 +87,11 @@ def rating(param):
     if param == 'whippets':
         return render_template('rating.html', param=param)
     elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('rating.html', param=param)
+        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('rating.html',
+                                                                                                   param=param)
     elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('rating.html', param=param)
+        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('rating.html',
+                                                                                                 param=param)
 
 
 @application.route('/best/<param>')
@@ -85,9 +99,11 @@ def best(param):
     if param == 'whippets':
         return render_template('best.html', param=param)
     elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('best.html', param=param)
+        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('best.html',
+                                                                                                   param=param)
     elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('best.html', param=param)
+        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('best.html',
+                                                                                                 param=param)
 
 
 @application.route('/explanations')
@@ -190,6 +206,57 @@ def get_partial_data():
     rows = cur.fetchall()
     data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3],
              "RecordCount": row[5]} for row in
+            rows]
+
+    return jsonify(data)
+
+
+@application.route('/get-results-data', methods=['POST'])
+def get_results_data():
+    param = request.json['paramValue']
+    selected_type = request.json['selectedType']
+    selected_sex = request.json['selectedSex']
+    name_search = request.json['nameSearch']
+    date = '2022-05-21'
+    # date = request.json['dateValue']
+
+    if param == 'whippets':
+        param = 'Уиппет'
+    elif param == 'italian_greyhounds':
+        param = 'Малая итальянская борзая (Левретка)'
+    elif param == 'pharaoh_hound':
+        param = 'Фараонова собака'
+
+    cur = mysql.connection.cursor()
+    base_query = f"""SELECT * FROM (SELECT Date, Location, Distance, Type, Sex, Nickname, title, time_1, 
+                                    time_2, time_3, link, breedarchive_link, breed FROM {DATABASE}.racing 
+                                    WHERE Type != 'Юниоры' AND Breed = '{param}' AND Date = '{date}'
+                                    ) AS sub"""
+    conditions = []
+    params = []
+
+    if selected_type != "all":
+        conditions.append("Type=%s")
+        params.append(selected_type)
+    if selected_sex != "all":
+        conditions.append("Sex=%s")
+        params.append(selected_sex)
+    if name_search:
+        conditions.append("Nickname LIKE %s")
+        params.append("%" + name_search + "%")
+
+    if conditions:
+        query = base_query + " WHERE " + " AND ".join(conditions)
+    else:
+        query = base_query
+
+    query += " ORDER BY Nickname ASC"
+    cur.execute(query, params)
+    rows = cur.fetchall()
+
+    data = [{"date": row[0], "location": row[1], "distance": row[2], "type": row[3], "sex": row[4],
+             "nickname": row[5], "title": row[6], "time_1": row[7], "time_2": row[8], "time_3": row[9],
+             "link": row[10], "breedarchive_link": row[11], "time_breed3": row[12]} for row in
             rows]
 
     return jsonify(data)
@@ -636,7 +703,8 @@ def update_data():
               ID = %s
             """
         cur.execute(update_query,
-                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, breed, location, row_id))
+                    (formatted_date, position, dog_type, sex, nickname, max_position, score, link, breed_link, breed,
+                     location, row_id))
         mysql.connection.commit()
         return jsonify()
     except Exception:
