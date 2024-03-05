@@ -15,10 +15,18 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="/">
-        <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
-        Рейсинг РФ
-    </a>
+    <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+            <a class="navbar-brand dropdown-toggle" href="/racing" role="button"
+               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
+                Рейсинг РФ
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <a class="dropdown-item" href="/">Курсинг РФ</a>
+            </div>
+        </li>
+    </ul>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -26,11 +34,11 @@
     <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" href="/">Главная <span class="sr-only">(current)</span></a>
+                <a class="nav-link" href="/racing">Главная <span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
-                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рейтинг</a>
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Результаты</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                     <a class="dropdown-item" href="/racing-rating/whippets">Уиппеты</a>
 {#                    <a class="dropdown-item" href="/rating/italian_greyhounds">Левретки</a>#}
@@ -39,15 +47,12 @@
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
-                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Топ-5</a>
+                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рекорды</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                     <a class="dropdown-item" href="/best/whippets">Уиппеты</a>
 {#                    <a class="dropdown-item" href="/best/italian_greyhounds">Левретки</a>#}
 {#                    <a class="dropdown-item" href="/best/pharaoh_hound">Фараонова собака</a>#}
                 </div>
-            </li>
-            <li class="nav-item active">
-                <a class="nav-link" href="/">Курсинг <span class="sr-only">(current)</span></a>
             </li>
         </ul>
     </div>

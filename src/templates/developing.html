@@ -13,10 +13,18 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="/">
-        <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
-        Курсинг РФ
-    </a>
+    <ul class="navbar-nav">
+        <li class="nav-item dropdown">
+            <a class="navbar-brand dropdown-toggle" href="/" role="button"
+               data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <img src="../static/images/icon.jfif" alt="Card image cap" style="width: 30px; height: 30px">
+                Курсинг РФ
+            </a>
+            <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                <a class="dropdown-item" href="/racing">Рейсинг РФ</a>
+            </div>
+        </li>
+    </ul>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>

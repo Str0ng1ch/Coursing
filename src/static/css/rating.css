@@ -6,10 +6,12 @@
 
 .female-row {
     background-color: rgba(247, 151, 247, 0.2);
+    vertical-align: center;
 }
 
 .male-row {
     background-color: rgba(196, 227, 242, 0.3);
+    vertical-align: center;
 }
 
 .table-header {
@@ -19,4 +21,8 @@
 #infoModal .modal-dialog {
     max-width: 59%;
     min-width: 800px;
+}
+
+.table td, th {
+    vertical-align: middle;
 }

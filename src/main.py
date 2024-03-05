@@ -256,7 +256,7 @@ def get_results_data():
 
     data = [{"date": row[0], "location": row[1], "distance": row[2], "type": row[3], "sex": row[4],
              "nickname": row[5], "title": row[6], "time_1": row[7], "time_2": row[8], "time_3": row[9],
-             "link": row[10], "breedarchive_link": row[11], "time_breed3": row[12]} for row in
+             "link": row[10], "breedarchive_link": row[11], "breed": row[12]} for row in
             rows]
 
     return jsonify(data)
