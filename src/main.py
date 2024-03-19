@@ -78,8 +78,13 @@ def racing():
 
 @application.route('/racing-rating/<param>')
 def racing_rating(param):
+    cursor = mysql.connection.cursor()
+    query = f'SELECT DISTINCT(date) FROM {DATABASE}.racing'
+    cursor.execute(query)
+    dates = cursor.fetchall()
+    cursor.close()
     if param == 'whippets':
-        return render_template('racing_rating.html')
+        return render_template('racing_rating.html', date_options=[date[0].strftime("%Y-%m-%d") for date in dates])
 
 
 @application.route('/rating/<param>')
@@ -211,14 +216,22 @@ def get_partial_data():
     return jsonify(data)
 
 
+@application.route('/set-results-date', methods=['POST'])
+def set_results_date():
+    session['RESULTS_DATE'] = request.json['value']
+    return jsonify({"status": "success"})
+
+
 @application.route('/get-results-data', methods=['POST'])
 def get_results_data():
     param = request.json['paramValue']
     selected_type = request.json['selectedType']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
-    date = '2022-05-21'
-    # date = request.json['dateValue']
+    all_rows = request.json.get('allRows', False)
+    date = session.get('RESULTS_DATE')
+    if not date:
+        date = '2022-05-21'
 
     if param == 'whippets':
         param = 'Уиппет'
@@ -250,7 +263,9 @@ def get_results_data():
     else:
         query = base_query
 
-    query += " ORDER BY Nickname ASC"
+    query += " ORDER BY Title DESC"
+    if not all_rows:
+        query += " LIMIT 9"
     cur.execute(query, params)
     rows = cur.fetchall()
 

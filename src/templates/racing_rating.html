@@ -36,9 +36,8 @@
 
         .sort_button {
             background-image: url('../static/images/sort.png');
-            width: 100px; /* установите ширину и высоту картинки в соответствии с вашими требованиями */
+            width: 100px;
             height: 50px;
-            /* если вы хотите скрыть текстовое содержимое кнопки, вы можете использовать следующие свойства: */
             text-indent: -9999px;
             overflow: hidden;
         }
@@ -73,8 +72,8 @@
                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Результаты</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                     <a class="dropdown-item" href="/racing-rating/whippets">Уиппеты</a>
-{#                    <a class="dropdown-item" href="/rating/italian_greyhounds">Левретки</a>#}
-{#                    <a class="dropdown-item" href="/rating/pharaoh_hound">Фараонова собака</a>#}
+                    {#                    <a class="dropdown-item" href="/rating/italian_greyhounds">Левретки</a>#}
+                    {#                    <a class="dropdown-item" href="/rating/pharaoh_hound">Фараонова собака</a>#}
                 </div>
             </li>
             <li class="nav-item dropdown">
@@ -82,8 +81,8 @@
                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рекорды</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
                     <a class="dropdown-item" href="/best/whippets">Уиппеты</a>
-{#                    <a class="dropdown-item" href="/best/italian_greyhounds">Левретки</a>#}
-{#                    <a class="dropdown-item" href="/best/pharaoh_hound">Фараонова собака</a>#}
+                    {#                    <a class="dropdown-item" href="/best/italian_greyhounds">Левретки</a>#}
+                    {#                    <a class="dropdown-item" href="/best/pharaoh_hound">Фараонова собака</a>#}
                 </div>
             </li>
         </ul>
@@ -96,6 +95,12 @@
 </nav>
 
 <div class="container mt-5">
+    <h1>Выберите значение из списка</h1>
+    <select id="dropdown" onchange="sendData()">
+        {% for date in date_options %}
+        <option value="{{ date }}">{{ date }}</option>
+        {% endfor %}
+    </select>
     <div>
         <p id="competition" style="display: none">Соревнование</p>
     </div>
@@ -217,7 +222,7 @@
         loadResultsData(paramValue, selectedType, selectedSex, nameSearch);
     });
 
-    function loadResultsData(paramValue, selectedSex, selectedType, nameSearch) {
+    function loadResultsData(paramValue, selectedSex, selectedType, nameSearch, allRows = false) {
         $.ajax({
             url: "/get-results-data",
             type: "POST",
@@ -226,12 +231,15 @@
                 selectedType: selectedType,
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
+                allRows: allRows
             }),
             contentType: "application/json; charset=utf-8",
             dataType: "json",
             success: function (data) {
-                console.log(data);
                 let tableContent = '';
+                let minTimes = [Infinity, Infinity, Infinity];
+                let minIndices = [0, 0, 0];
+                console.log(data)
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
                     $("#showAllButton").hide();
@@ -253,8 +261,12 @@
                         for (let j = 1; j <= 3; j++) {
                             let time = data[i]['time_' + j];
                             if (!(time.includes('снят') || time.includes('дискв') || time === '')) {
+                                if (time < minTimes[j - 1]) {
+                                    minTimes[j - 1] = time;
+                                    minIndices[j - 1] = i;
+                                }
                                 let speed = (data[0].distance / time).toFixed(2);
-                                tableContent += '<td>' + time + ' с <br>' + speed + ' м/c <br>' + (speed * 3.6).toFixed(2) + ' км/ч</td>';
+                                tableContent += '<td><b>' + time + ' с </b><br>' + speed + ' м/c <br>' + (speed * 3.6).toFixed(2) + ' км/ч</td>';
                             } else {
                                 tableContent += '<td>' + time + '</td>';
                             }
@@ -264,10 +276,58 @@
                         tableContent += '</tr>';
                     }
                 }
-                $("#resultsData").html(tableContent);
+                console.log('Минимальные значения времени для каждого j:', minTimes);
+                console.log('Индексы Минимального значения времени для каждого j:', minIndices);
                 sortTitleData();
+                if (allRows) {
+                    $("#showAllButton").hide();
+                    $("#showLessButton").show();
+                } else {
+                    if (data.length === 9) {
+                        tableContent += '<tr><td> ... </td><td> ... </td><td> ... </td><td> ... </td><td> ... </td></tr>';
+                    }
+                    $("#showAllButton").show();
+                    $("#showLessButton").hide();
+                }
+                if (data.length < 9) {
+                    $("#showAllButton").hide();
+                    $("#showLessButton").hide();
+                }
+                $("#resultsData").html(tableContent);
+
+                for (let j = 3; j <= 5; j++) {
+                    let row_index = minIndices[j - 3] + 1;
+                    var table = document.getElementById("results_table");
+                    var cell = table.rows[row_index].cells[j];
+
+                    cell.style.backgroundColor = "yellow";
+                }
+
             }
         })
+    }
+
+    function sendData() {
+        var selectedValue = document.getElementById("dropdown").value;
+        let urlParts = window.location.href.split('/');
+        let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+
+        fetch("/set-results-date", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                paramValue: paramValue,
+                value: selectedValue
+            })
+        })
+            .then(data => {
+                updateData(false);
+            })
+            .catch(error => {
+                console.error("Ошибка при отправке запроса:", error);
+            });
     }
 
     function updateData(allRows) {
@@ -276,15 +336,16 @@
         let nameSearch = $("#nameSearch_racing").val();
         let urlParts = window.location.href.split('/');
         let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
-        loadResultsData(paramValue, selectedSex, selectedType, nameSearch);
+        loadResultsData(paramValue, selectedSex, selectedType, nameSearch, allRows);
     }
 
     function sortTitleData() {
+        console.log('here')
         let rows = $('#resultsData tr').get();
 
         rows.sort(function (rowA, rowB) {
-            let valueA = $(rowA).find('td:nth-child(7)').text().trim();
-            let valueB = $(rowB).find('td:nth-child(7)').text().trim();
+            let valueA = $(rowA).find('td:nth-child(6)').text().trim();
+            let valueB = $(rowB).find('td:nth-child(6)').text().trim();
 
             if (valueA !== valueB) {
                 let numA = isNaN(parseFloat(valueA[0])) ? 11 : parseFloat(valueA[0]);
@@ -295,7 +356,6 @@
                 let sumB = 0;
 
                 for (let i = 4; i <= 6; i++) {
-                    console.log(parseFloat($(rowA).find('td:nth-child(' + i + ')').text()))
                     sumA += parseFloat($(rowA).find('td:nth-child(' + i + ')').text().trim()) || 0;
                     sumB += parseFloat($(rowB).find('td:nth-child(' + i + ')').text().trim()) || 0;
                 }
@@ -309,6 +369,7 @@
         });
     }
 
+
     $("#nameSearch_racing").on('input', function () {
         updateData(false);
     });
@@ -319,6 +380,14 @@
 
     $("#typeDropdown_racing").on('input', function () {
         updateData(false);
+    });
+
+    $("#lap3_sort").click(function () {
+        sortLoopData(5);
+    });
+
+    $("#title_sort").click(function () {
+        sortTitleData()
     });
 
     $("#showAllButton").click(function () {
