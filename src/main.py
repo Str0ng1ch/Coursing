@@ -263,7 +263,7 @@ def get_results_data():
     else:
         query = base_query
 
-    query += " ORDER BY Title DESC"
+    query += " ORDER BY Title ASC"
     if not all_rows:
         query += " LIMIT 9"
     cur.execute(query, params)
