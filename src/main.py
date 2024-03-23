@@ -241,6 +241,25 @@ def get_best_racing_data():
 
     cur.execute(base_query)
     rows = cur.fetchall()
+    min_times = {}
+
+    # Обходим все записи и находим минимальное время для каждой даты
+    for row in rows:
+        date = row[0]
+        time_1 = float(row[6]) if row[6].replace('.', '').isdigit() else 1000
+        time_2 = float(row[7]) if row[7].replace('.', '').isdigit() else 1000
+        time_3 = float(row[8]) if row[8].replace('.', '').isdigit() else 1000
+
+        # Выбираем минимальное время среди time_1, time_2 и time_3
+        min_time = min(time_1, time_2, time_3)
+
+        # Если для данной даты уже есть минимальное время, сравниваем с текущим и выбираем минимальное
+        if date in min_times:
+            min_times[date] = min(min_times[date], min_time)
+        else:
+            min_times[date] = min_time
+    print(min_times)
+
     data = [{"date": row[0], "location": row[1], "nickname": row[4], "record": row[6], "distance": row[2],
              "title": row[5], "sex": row[3]} for row in
             rows]
