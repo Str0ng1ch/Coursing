@@ -5,6 +5,16 @@ try:
 except ImportError:
     from bs4 import BeautifulSoup
 
+from openpyxl import Workbook
+
+# Создаем новую книгу Excel и выбираем активный лист
+wb = Workbook()
+ws = wb.active
+
+# Добавляем заголовки столбцов
+ws.append(['Distance', 'Dog Type', 'Sex', 'Nickname', 'Title', 'Lap 1', 'Lap 2', 'Lap 3'])
+
+
 DATABASE, TABLE = "coursing", "results"
 # config = {
 #     'user': "u2255198_artem",
@@ -51,16 +61,25 @@ def parse_data(soup, breed):
 
 
 def make_rating():
-    page = urlopen("http://procoursing.ru/Complete_Results_2023-09-02_V_R.html")
+    page = urlopen("http://procoursing.ru/Complete_Results_2023-06-10.html")
     soup = BeautifulSoup(page, features="html.parser")
 
     all_rows = soup.find_all('tr', align="center", bgcolor="#ffffff")
     for i, row in enumerate(all_rows):
         cols = row.find_all('td')
         if cols[2].get_text() == 'Уиппет':
-            print(cols[2].get_text(), cols[3].get_text(), cols[4].get_text(),
-                  cols[5].get_text(), cols[6].get_text(), cols[9].get_text(), cols[12].get_text(),
-                  cols[15].get_text(), cols[17].get_text())
+            breed = cols[2].get_text()
+            dog_type = cols[3].get_text()
+            sex = cols[4].get_text()
+            nickname = cols[5].get_text()
+            distance = cols[6].get_text()
+            lap_1 = cols[9].get_text() if cols[9].get_text() == '' else cols[9].get_text().split()[0]
+            lap_2 = cols[12].get_text() if cols[12].get_text() == '' else cols[12].get_text().split()[0]
+            lap_3 = cols[15].get_text() if cols[15].get_text() == '' else cols[15].get_text().split()[0]
+            title = cols[17].get_text()
+            print(distance, dog_type, sex, nickname, title, lap_1, lap_2, lap_3)
 
+            ws.append([distance, dog_type, sex, nickname, title, lap_1, lap_2, lap_3])
+            wb.save('dog_data.xlsx')
 
 make_rating()

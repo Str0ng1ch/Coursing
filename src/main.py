@@ -2,6 +2,7 @@ import io
 from collections import Counter
 from datetime import datetime
 from functools import wraps
+import locale
 
 import Levenshtein
 import pandas as pd
@@ -20,6 +21,7 @@ VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD = "view_access", "l3vr3tk1P@ssw0r
 VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD = "view_access", "password_phara0h_h0und"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
+# locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 application = Flask(__name__)
 # application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
 # application.config['MYSQL_USER'] = "u2255198_artem"
@@ -79,12 +81,19 @@ def racing():
 @application.route('/racing-rating/<param>')
 def racing_rating(param):
     cursor = mysql.connection.cursor()
-    query = f'SELECT DISTINCT(date) FROM {DATABASE}.racing'
+    query = f'SELECT DISTINCT(date), location FROM {DATABASE}.racing'
     cursor.execute(query)
-    dates = cursor.fetchall()
+    dates_and_locations = cursor.fetchall()
     cursor.close()
     if param == 'whippets':
-        return render_template('racing_rating.html', date_options=[date[0].strftime("%Y-%m-%d") for date in dates])
+        date_options = [(date[0], date[1]) for date in dates_and_locations]
+        return render_template('racing_rating.html', date_options=date_options)
+
+
+@application.route('/racing-best/<param>')
+def racing_best(param):
+    if param == 'whippets':
+        return render_template('racing_best.html')
 
 
 @application.route('/rating/<param>')
@@ -211,6 +220,29 @@ def get_partial_data():
     rows = cur.fetchall()
     data = [{"type": row[0], "sex": row[1], "name": row[2], "TotalScore": row[4], "breedLink": row[3],
              "RecordCount": row[5]} for row in
+            rows]
+
+    return jsonify(data)
+
+
+@application.route('/get-best-racing-data', methods=['POST'])
+def get_best_racing_data():
+    param = request.json['paramValue']
+
+    if param == 'whippets':
+        param = 'Уиппет'
+    elif param == 'italian_greyhounds':
+        param = 'Малая итальянская борзая (Левретка)'
+    elif param == 'pharaoh_hound':
+        param = 'Фараонова собака'
+
+    cur = mysql.connection.cursor()
+    base_query = f"""SELECT Date, Location, Distance, Sex, Nickname, title, time_1, time_2, time_3 FROM {DATABASE}.racing"""
+
+    cur.execute(base_query)
+    rows = cur.fetchall()
+    data = [{"date": row[0], "location": row[1], "nickname": row[4], "record": row[6], "distance": row[2],
+             "title": row[5], "sex": row[3]} for row in
             rows]
 
     return jsonify(data)

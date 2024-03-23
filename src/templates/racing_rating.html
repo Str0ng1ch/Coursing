@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Курсинг РФ</title>
+    <title>Рейсинг РФ</title>
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
@@ -80,7 +80,7 @@
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Рекорды</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                    <a class="dropdown-item" href="/best/whippets">Уиппеты</a>
+                    <a class="dropdown-item" href="/racing-best/whippets">Уиппеты</a>
                     {#                    <a class="dropdown-item" href="/best/italian_greyhounds">Левретки</a>#}
                     {#                    <a class="dropdown-item" href="/best/pharaoh_hound">Фараонова собака</a>#}
                 </div>
@@ -95,11 +95,14 @@
 </nav>
 
 <div class="container mt-5">
-    <h1>Выберите соревнование: <select id="dropdown" onchange="sendData()">{% for date in date_options %}<option value="{{ date }}">{{ date }}</option>{% endfor %}</select></h1>
+    <h1>Выберите соревнование: <select id="dropdown" onchange="sendData()" style="font-size: 18px;">
+        {% for date, location in date_options %}
+            <option value="{{ date }}">{{ date }}, {{ location }}</option>
+        {% endfor %}
+    </select></h1>
 
     <div>
         <p id="competition" style="display: none"></p>
-        <p id="best_results">Лучшие результаты: </p>
     </div>
     <table class="table table-bordered" id="results_table">
         <thead>
@@ -219,12 +222,18 @@
         loadResultsData(paramValue, selectedType, selectedSex, nameSearch);
     });
 
-    function addResultsToText(bestResultsByClass) {
+    function formatDate(dateString) {
+        const options = {day: 'numeric', month: 'long', year: 'numeric'};
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ru-RU', options);
+    }
+
+    function addResultsToText(results) {
         let bestResultsText = document.getElementById("best_results");
         let textToAdd = "";
 
-        for (let classKey in bestResultsByClass) {
-            let times = bestResultsByClass[classKey].times;
+        for (let classKey in results) {
+            let times = results[classKey].times;
             let formattedTimes = times.map(time => time === Infinity ? "нет" : time);
             textToAdd += `<br>${classKey}: ${formattedTimes.join(" ")}`;
         }
@@ -249,7 +258,6 @@
                 let tableContent = '';
                 let minTimes = [Infinity, Infinity, Infinity];
                 let minIndices = [0, 0, 0];
-                let minTimesByTypeAndSex = {};
                 console.log(data)
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
@@ -269,22 +277,9 @@
                         tableContent += '<td>' + data[i].type + '</td>';
                         tableContent += '<td><a href="' + data[i].breedarchive_link + '" style="text-decoration: underline" target="_blank">' + data[i].nickname + '</a></td>';
 
-                        let key = data[i].type + '_' + data[i].sex;
-                        if (!minTimesByTypeAndSex[key]) {
-                            minTimesByTypeAndSex[key] = {
-                                times: [Infinity, Infinity, Infinity],
-                                indices: [0, 0, 0]
-                            };
-                        }
-
                         for (let j = 1; j <= 3; j++) {
                             let time = data[i]['time_' + j];
                             if (!(time.includes('снят') || time.includes('дискв') || time === '')) {
-                                if (time < minTimesByTypeAndSex[key].times[j - 1]) {
-                                    minTimesByTypeAndSex[key].times[j - 1] = time;
-                                    minTimesByTypeAndSex[key].indices[j - 1] = i;
-                                }
-
                                 if (time < minTimes[j - 1]) {
                                     minTimes[j - 1] = time;
                                     minIndices[j - 1] = i;
@@ -300,8 +295,6 @@
                         tableContent += '</tr>';
                     }
                 }
-                console.log('min time:', minTimesByTypeAndSex);
-                addResultsToText(minTimesByTypeAndSex);
                 sortTitleData();
                 if (allRows) {
                     $("#showAllButton").hide();
