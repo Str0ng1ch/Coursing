@@ -95,17 +95,38 @@
 </nav>
 
 <div class="container mt-5">
+    <div style="text-align: center">
+        <h1 style="margin-bottom: 2px">Выберите год: </h1>
+        <div class="d-flex justify-content-center">
+            {% for year in [2022, 2023, 2024] %}
+                {% if year == selected_year %}
+                    <button class="btn btn-success" type="button" id="dropdownMenuButton{{ year }}"
+                            data-bs-toggle="dropdown" aria-expanded="false" style="margin: 0 10px"
+                            onclick="setYear({{ year }})">
+                        {{ year }}
+                    </button>
+                {% else %}
+                    <button class="btn btn-secondary" type="button" id="dropdownMenuButton{{ year }}"
+                            data-bs-toggle="dropdown" aria-expanded="false" style="margin: 0 10px"
+                            onclick="setYear({{ year }})">
+                        {{ year }}
+                    </button>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    <br>
     <table class="table table-bordered" id="results_table">
         <thead>
         <tr class="table-header">
             <th>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center" style="min-width: 150px; max-width: 170px">
                     <label for="date">Дата</label>
                 </div>
             </th>
             <th>
                 <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
-                    <label for="location">Место</label>
+                    <label for="location">Место / Ранг</label>
                 </div>
             </th>
             <th>
@@ -116,21 +137,15 @@
             <th>
                 <div class="d-flex align-items-center" style="min-width: 110px; max-width: 130px">
                     <label for="record">Рекорд</label>
-                    <button id="record_sort" style="background-color: transparent; border: none; margin-left: 10px">
-                        <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
-                    </button>
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 110px; max-width: 130px">
+                <div class="d-flex align-items-center" style="min-width: 80px; max-width: 100px">
                     <label for="distance">Дистация</label>
-                    <button id="distance" style="background-color: transparent; border: none; margin-left: 10px">
-                        <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
-                    </button>
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 100px; max-width: 130px">
+                <div class="d-flex align-items-center" style="min-width: 120px; max-width: 130px">
                     <label for="title">Титул</label>
                 </div>
             </th>
@@ -139,6 +154,10 @@
         <tbody id="resultsData">
         </tbody>
     </table>
+
+    <div id="noResultsMessage" class="text-center mt-3" style="display: none;">
+        Похоже в этом году пока еще не было соревнований. <br>
+    </div>
 </div>
 
 <footer class="footer" id="footer" style="display: inherit">
@@ -153,6 +172,32 @@
 </footer>
 
 <script>
+    function setYear(selectedYear) {
+        let urlParts = window.location.href.split('/');
+        let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+        document.getElementById('dropdownMenuButton2022').className = "btn btn-secondary";
+        document.getElementById('dropdownMenuButton2023').className = "btn btn-secondary";
+        document.getElementById('dropdownMenuButton2024').className = "btn btn-secondary";
+        document.getElementById('dropdownMenuButton' + selectedYear).className = "btn btn-success";
+
+        fetch("/set-records-date", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                paramValue: paramValue,
+                value: selectedYear
+            })
+        })
+            .then(data => {
+                loadData(paramValue);
+            })
+            .catch(error => {
+                console.error("Ошибка при отправке запроса:", error);
+            });
+    }
+
     $(document).ready(function () {
         let urlParts = window.location.href.split('/');
         let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
@@ -172,21 +217,29 @@
                 let tableContent = '';
                 console.log(data)
 
+                const options = {year: 'numeric', month: 'long', day: 'numeric'};
+
                 for (let i = 0; i < data.length; i++) {
                     let genderClass = data[i].sex === 'сука' ? 'female-row' : 'male-row';
                     tableContent += '<tr class="' + genderClass + '">';
-                    tableContent += '<td>' + data[i].date + '</td>';
+                    tableContent += '<td>' + new Date(data[i].date).toLocaleDateString('ru', options) + '</td>';
                     tableContent += '<td>' + data[i].location + '</td>';
                     tableContent += '<td>' + data[i].nickname + '</td>';
-                    tableContent += '<td>' + data[i].record + '</td>';
+                    let speed = (data[0].distance / data[i].record).toFixed(2);
+                    tableContent += '<td><b>' + data[i].record + ' с </b><br>' + speed + ' м/c <br>' + (speed * 3.6).toFixed(2) + ' км/ч</td>';
                     tableContent += '<td>' + data[i].distance + '</td>';
-                    tableContent += '<td>' + data[i].title + '</td>';
+                    tableContent += '<td>' + data[i].title.substring(2) + '</td>';
 
                     {#tableContent += '<td><a href="' + data[i].breedarchive_link + '" style="text-decoration: underline" target="_blank">' + data[i].nickname + '</a></td>';#}
 
                     tableContent += '</tr>';
                 }
 
+                if (data.length === 0) {
+                    $("#noResultsMessage").show();
+                } else {
+                    $("#noResultsMessage").hide();
+                }
                 $("#resultsData").html(tableContent);
             }
         })

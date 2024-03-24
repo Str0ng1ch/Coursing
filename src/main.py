@@ -21,7 +21,7 @@ VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD = "view_access", "l3vr3tk1P@ssw0r
 VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD = "view_access", "password_phara0h_h0und"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
-# locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 application = Flask(__name__)
 # application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
 # application.config['MYSQL_USER'] = "u2255198_artem"
@@ -81,19 +81,21 @@ def racing():
 @application.route('/racing-rating/<param>')
 def racing_rating(param):
     cursor = mysql.connection.cursor()
-    query = f'SELECT DISTINCT(date), location FROM {DATABASE}.racing'
+    query = f'SELECT DISTINCT(date), location FROM {DATABASE}.racing ORDER BY date'
     cursor.execute(query)
     dates_and_locations = cursor.fetchall()
     cursor.close()
     if param == 'whippets':
         date_options = [(date[0], date[1]) for date in dates_and_locations]
-        return render_template('racing_rating.html', date_options=date_options)
+        year = 2024 if not session['RESULTS_DATE'] else int(session['RESULTS_DATE'].split('-')[0])
+        return render_template('racing_rating.html', date_options=date_options, selected_year=year)
 
 
 @application.route('/racing-best/<param>')
 def racing_best(param):
     if param == 'whippets':
-        return render_template('racing_best.html')
+        year = 2024 if not session['RECORDS_DATE'] else session['RECORDS_DATE']
+        return render_template('racing_best.html', selected_year=year)
 
 
 @application.route('/rating/<param>')
@@ -173,7 +175,8 @@ def get_score_details():
     name = name.replace('<br>', '/')
 
     cursor = mysql.connection.cursor()
-    query = f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link, Sex, location FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date '
+    query = (f'SELECT date, position, max_position, score, link, Nickname, breedarchive_link, Sex, location '
+             f'FROM {DATABASE}.{TABLE} WHERE Nickname = "{name}" AND Type = "{dog_type}" ORDER BY date ')
     cursor.execute(query)
     score_details = cursor.fetchall()
     cursor.close()
@@ -228,6 +231,9 @@ def get_partial_data():
 @application.route('/get-best-racing-data', methods=['POST'])
 def get_best_racing_data():
     param = request.json['paramValue']
+    year = session['RECORDS_DATE']
+    if not year:
+        year = 2024
 
     if param == 'whippets':
         param = 'Уиппет'
@@ -237,39 +243,51 @@ def get_best_racing_data():
         param = 'Фараонова собака'
 
     cur = mysql.connection.cursor()
-    base_query = f"""SELECT Date, Location, Distance, Sex, Nickname, title, time_1, time_2, time_3 FROM {DATABASE}.racing"""
+    base_query = f"""SELECT Date, Location, Distance, Sex, Nickname, title, time_1, time_2, time_3 
+                        FROM {DATABASE}.racing WHERE YEAR(Date) = '{year}';"""
 
     cur.execute(base_query)
     rows = cur.fetchall()
     min_times = {}
-
-    # Обходим все записи и находим минимальное время для каждой даты
     for row in rows:
         date = row[0]
         time_1 = float(row[6]) if row[6].replace('.', '').isdigit() else 1000
         time_2 = float(row[7]) if row[7].replace('.', '').isdigit() else 1000
         time_3 = float(row[8]) if row[8].replace('.', '').isdigit() else 1000
 
-        # Выбираем минимальное время среди time_1, time_2 и time_3
         min_time = min(time_1, time_2, time_3)
-
-        # Если для данной даты уже есть минимальное время, сравниваем с текущим и выбираем минимальное
         if date in min_times:
             min_times[date] = min(min_times[date], min_time)
         else:
             min_times[date] = min_time
-    print(min_times)
 
-    data = [{"date": row[0], "location": row[1], "nickname": row[4], "record": row[6], "distance": row[2],
-             "title": row[5], "sex": row[3]} for row in
-            rows]
+    filtered_data = []
+    for row in rows:
+        if row[0] in min_times and (row[6] == str(min_times[row[0]]) or row[7] == str(min_times[row[0]]) or
+                                    row[8] == str(min_times[row[0]])):
+            filtered_data.append({
+                "date": row[0],
+                "location": row[1],
+                "nickname": row[4],
+                "record": min_times[row[0]],
+                "distance": row[2],
+                "title": row[5],
+                "sex": row[3]
+            })
+    filtered_data = sorted(filtered_data, key=lambda x: x["record"])
 
-    return jsonify(data)
+    return jsonify(filtered_data)
 
 
 @application.route('/set-results-date', methods=['POST'])
 def set_results_date():
     session['RESULTS_DATE'] = request.json['value']
+    return jsonify({"status": "success"})
+
+
+@application.route('/set-records-date', methods=['POST'])
+def set_records_date():
+    session['RECORDS_DATE'] = request.json['value']
     return jsonify({"status": "success"})
 
 
@@ -279,12 +297,16 @@ def get_results_data():
     selected_type = request.json['selectedType']
     selected_sex = request.json['selectedSex']
     name_search = request.json['nameSearch']
+    lap_1_sorted = request.json['lap_1_sorted']
+    lap_2_sorted = request.json['lap_2_sorted']
+    lap_3_sorted = request.json['lap_3_sorted']
+    title_sorted = request.json['title_sorted']
     all_rows = request.json.get('allRows', False)
-    date = session.get('RESULTS_DATE')
+    date = str(session.get('RESULTS_DATE')).strip()
     if not date:
         date = '2022-05-21'
 
-    if param == 'whippets':
+    if 'whippets' in param:
         param = 'Уиппет'
     elif param == 'italian_greyhounds':
         param = 'Малая итальянская борзая (Левретка)'
@@ -314,7 +336,39 @@ def get_results_data():
     else:
         query = base_query
 
-    query += " ORDER BY Title ASC"
+    if lap_1_sorted:
+        query += """ ORDER BY  
+                        CASE 
+                            WHEN time_1 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_1 AS FLOAT)
+                            ELSE 99999999 -- Большое число, чтобы значения float оказались в начале
+                          END,
+                          CASE 
+                            WHEN time_1 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
+                            ELSE 1 -- Буквенные значения и пустые строки будут после float значений
+                          END"""
+    elif lap_2_sorted:
+        query += """ ORDER BY  
+                        CASE 
+                            WHEN time_2 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_2 AS FLOAT)
+                            ELSE 99999999
+                        END,
+                        CASE 
+                            WHEN time_2 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
+                            ELSE 1
+                        END"""
+    elif lap_3_sorted:
+        query += """ ORDER BY  
+                        CASE 
+                            WHEN time_3 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_3 AS FLOAT)
+                            ELSE 99999999
+                        END,
+                        CASE 
+                            WHEN time_3 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
+                            ELSE 1
+                        END"""
+    else:
+        query += " ORDER BY LEFT(Title, 1) ASC"
+
     if not all_rows:
         query += " LIMIT 9"
     cur.execute(query, params)

@@ -12,6 +12,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 
     <style>
         .tableTypeButton {
@@ -40,6 +42,10 @@
             height: 50px;
             text-indent: -9999px;
             overflow: hidden;
+        }
+
+        .competition {
+            font-size: 20px;
         }
     </style>
 </head>
@@ -95,15 +101,41 @@
 </nav>
 
 <div class="container mt-5">
-    <h1>Выберите соревнование: <select id="dropdown" onchange="sendData()" style="font-size: 18px;">
-        {% for date, location in date_options %}
-            <option value="{{ date }}">{{ date }}, {{ location }}</option>
-        {% endfor %}
-    </select></h1>
-
-    <div>
-        <p id="competition" style="display: none"></p>
+    <div style="text-align: center">
+        <h1 style="margin-bottom: 2px">Выберите соревнование </h1>
+        <div class="d-flex justify-content-center">
+            {% for year in [2022, 2023, 2024] %}
+                <div class="dropdown" style="margin-right: 20px">
+                    {% if year == selected_year %}
+                        <button class="btn btn-success dropdown-toggle" type="button"
+                                id="dropdownMenuButton{{ year }}"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ year }}
+                        </button>
+                    {% else %}
+                        <button class="btn btn-secondary dropdown-toggle" type="button"
+                                id="dropdownMenuButton{{ year }}"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ year }}
+                        </button>
+                    {% endif %}
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ year }}">
+                        {% for date, location in date_options %}
+                            {% if date.year == year %}
+                                <li>
+                                    <a class="dropdown-item" href="#"
+                                       onclick="sendData('{{ date }}')">{{ date }}, {{ location }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        </div>
+        <br>
+        <p id="competition" class="competition" style="display: none;"></p>
     </div>
+
     <table class="table table-bordered" id="results_table">
         <thead>
         <tr class="table-header">
@@ -118,7 +150,7 @@
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 130px; max-width: 180px">
+                <div class="d-flex align-items-center" style="min-width: 120px; max-width: 180px">
                     <label for="typeDropdown_racing">Класс</label>
                     <select class="form-control ml-2" id="typeDropdown_racing">
                         <option value="all" selected>Все</option>
@@ -127,32 +159,32 @@
                     </select>
                 </div>
             </th>
-            <th>
+            <th style="min-width: 150px; max-width: 150px;">
                 <div class="d-flex align-items-center">
                     <label for="nameSearch_racing">Кличка</label>
                     <input type="text" class="form-control ml-2" id="nameSearch_racing" placeholder="Поиск...">
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 110px; max-width: 130px">
+                <div class="d-flex align-items-center" style="min-width: 100px; max-width: 130px">
                     <label for="time_1">Круг 1</label>
-                    <button id="lap1_sort" style="background-color: transparent; border: none; margin-left: 10px">
+                    <button id="lap1_sort" style="background-color: transparent; border: none; margin-left: 5px">
                         <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
                     </button>
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 110px; max-width: 130px">
+                <div class="d-flex align-items-center" style="min-width: 100px; max-width: 130px">
                     <label for="time_2">Круг 2</label>
-                    <button id="lap2_sort" style="background-color: transparent; border: none; margin-left: 10px">
+                    <button id="lap2_sort" style="background-color: transparent; border: none; margin-left: 5px">
                         <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
                     </button>
                 </div>
             </th>
             <th>
-                <div class="d-flex align-items-center" style="min-width: 120px; max-width: 130px">
+                <div class="d-flex align-items-center" style="min-width: 100px; max-width: 130px">
                     <label for="time_3">Круг 3</label>
-                    <button id="lap3_sort" style="background-color: transparent; border: none; margin-left: 10px">
+                    <button id="lap3_sort" style="background-color: transparent; border: none; margin-left: 5px">
                         <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
                     </button>
                 </div>
@@ -160,7 +192,7 @@
             <th>
                 <div class="d-flex align-items-center" style="min-width: 100px; max-width: 130px">
                     <label for="title">Титул</label>
-                    <button id="title_sort" style="background-color: transparent; border: none; margin-left: 10px">
+                    <button id="title_sort" style="background-color: transparent; border: none; margin-left: 5px">
                         <img src="../static/images/sort.png" alt="sort" style="width: 30px; height: 30px;">
                     </button>
                 </div>
@@ -176,7 +208,6 @@
         Попробуйте написать имя на другом языке или поставить другие параметры.
     </div>
 </div>
-
 
 <div class="text-center">
     <button class="btn btn-primary mt-3" id="showAllButton">Показать больше</button>
@@ -198,6 +229,7 @@
 </footer>
 
 <script>
+    var lap_1_sorted = false, lap_2_sorted = false, lap_3_sorted = false, title_sorted = true;
     document.addEventListener('DOMContentLoaded', function () {
         const buttons = document.querySelectorAll('.tableTypeButton');
 
@@ -228,19 +260,6 @@
         return date.toLocaleDateString('ru-RU', options);
     }
 
-    function addResultsToText(results) {
-        let bestResultsText = document.getElementById("best_results");
-        let textToAdd = "";
-
-        for (let classKey in results) {
-            let times = results[classKey].times;
-            let formattedTimes = times.map(time => time === Infinity ? "нет" : time);
-            textToAdd += `<br>${classKey}: ${formattedTimes.join(" ")}`;
-        }
-
-        bestResultsText.innerHTML = textToAdd;
-    }
-
     function loadResultsData(paramValue, selectedSex, selectedType, nameSearch, allRows = false) {
         $.ajax({
             url: "/get-results-data",
@@ -250,6 +269,10 @@
                 selectedType: selectedType,
                 selectedSex: selectedSex,
                 nameSearch: nameSearch,
+                lap_1_sorted: lap_1_sorted,
+                lap_2_sorted: lap_2_sorted,
+                lap_3_sorted: lap_3_sorted,
+                title_sorted: title_sorted,
                 allRows: allRows
             }),
             contentType: "application/json; charset=utf-8",
@@ -267,11 +290,12 @@
                 } else {
                     $("#noResultsMessage").hide();
                     const options = {year: 'numeric', month: 'long', day: 'numeric'};
-                    const formattedDate = new Date(data[0].date).toLocaleDateString('ru', options);
-                    document.getElementById('competition').style = 'display: block';
-                    document.getElementById('competition').innerHTML = formattedDate + ' ' + data[0].location + ', дистанция ' + data[0].distance + 'м'
+                    let formattedDate = (new Date(data[0].date).toLocaleDateString('ru', options)).toString()
+                    formattedDate = formattedDate.substring(0, formattedDate.length - 3)
+                    document.getElementById('competition').style = 'display: block;';
+                    document.getElementById('competition').innerHTML = formattedDate + ', ' + data[0].location + ', дистанция ' + data[0].distance + 'м'
                     for (let i = 0; i < data.length; i++) {
-                        let genderClass = data[i].sex === 'сука' ? 'female-row' : 'male-row';
+                        let genderClass = data[i].sex.includes('ука') ? 'female-row' : 'male-row';
                         tableContent += '<tr class="' + genderClass + '">';
                         tableContent += '<td>' + data[i].sex + '</td>';
                         tableContent += '<td>' + data[i].type + '</td>';
@@ -279,7 +303,7 @@
 
                         for (let j = 1; j <= 3; j++) {
                             let time = data[i]['time_' + j];
-                            if (!(time.includes('снят') || time.includes('дискв') || time === '')) {
+                            if (/^\d+$/.test(time.replace('.', ''))) {
                                 if (time < minTimes[j - 1]) {
                                     minTimes[j - 1] = time;
                                     minIndices[j - 1] = i;
@@ -291,7 +315,7 @@
                             }
                         }
 
-                        tableContent += '<td>' + data[i].title + '</td>';
+                        tableContent += '<td>' + data[i].title.substring(2) + '</td>';
                         tableContent += '</tr>';
                     }
                 }
@@ -314,20 +338,22 @@
 
                 for (let j = 3; j <= 5; j++) {
                     let row_index = minIndices[j - 3] + 1;
-                    var table = document.getElementById("results_table");
-                    var cell = table.rows[row_index].cells[j];
-
-                    cell.style.backgroundColor = "yellow";
+                    let table = document.getElementById("results_table");
+                    let cell = table.rows[row_index].cells[j];
+                    if (table.rows[row_index].cells[j].innerHTML !== '')
+                        cell.style.border = "5px solid red";
                 }
-
             }
         })
     }
 
-    function sendData() {
-        var selectedValue = document.getElementById("dropdown").value;
+    function sendData(selectedValue) {
         let urlParts = window.location.href.split('/');
         let paramValue = decodeURIComponent(urlParts[urlParts.length - 1]);
+        document.getElementById('dropdownMenuButton2022').style = "background-color: #6c757d"
+        document.getElementById('dropdownMenuButton2023').style = "background-color: #6c757d"
+        document.getElementById('dropdownMenuButton2024').style = "background-color: #6c757d"
+        document.getElementById('dropdownMenuButton' + selectedValue.split('-')[0]).style = "background-color: #28a745"
 
         fetch("/set-results-date", {
             method: "POST",
@@ -399,12 +425,36 @@
         updateData(false);
     });
 
+    $("#lap1_sort").click(function () {
+        lap_1_sorted = true;
+        lap_2_sorted = false;
+        lap_3_sorted = false;
+        title_sorted = false;
+        updateData(false)
+    });
+
+    $("#lap2_sort").click(function () {
+        lap_1_sorted = false;
+        lap_2_sorted = true;
+        lap_3_sorted = false;
+        title_sorted = false;
+        updateData(false)
+    });
+
     $("#lap3_sort").click(function () {
-        sortLoopData(5);
+        lap_1_sorted = false;
+        lap_2_sorted = false;
+        lap_3_sorted = true;
+        title_sorted = false;
+        updateData(false)
     });
 
     $("#title_sort").click(function () {
-        sortTitleData()
+        lap_1_sorted = false;
+        lap_2_sorted = false;
+        lap_3_sorted = false;
+        title_sorted = true;
+        updateData(false)
     });
 
     $("#showAllButton").click(function () {
