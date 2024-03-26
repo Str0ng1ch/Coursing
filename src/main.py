@@ -14,20 +14,19 @@ from pytils import dt
 
 from src.make_ratings import make_rating
 
-# DATABASE, TABLE = "u2255198_coursing", "results_test"
-DATABASE, TABLE = "coursing", "results"
+DATABASE, TABLE = "u2255198_coursing", "results_test"
+# DATABASE, TABLE = "coursing", "results"
 ADMIN_USERNAME, ADMIN_PASSWORD = "tanya_admin", "p0n4ik"
-VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD = "view_access", "l3vr3tk1P@ssw0rd"
-VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD = "view_access", "password_phara0h_h0und"
+VIEW_RACING_USERNAME, VIEW_RACING_PASSWORD = "view_access", "r@cingP@ssw0rd"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
 application = Flask(__name__)
-# application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
-# application.config['MYSQL_USER'] = "u2255198_artem"
-# application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
-application.config['MYSQL_HOST'] = "localhost"
-application.config['MYSQL_USER'] = "root"
-application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
+application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
+application.config['MYSQL_USER'] = "u2255198_artem"
+application.config['MYSQL_PASSWORD'] = "00zEbyTI3y5avEot"
+# application.config['MYSQL_HOST'] = "localhost"
+# application.config['MYSQL_USER'] = "root"
+# application.config['MYSQL_PASSWORD'] = "My$QLP@ssw0rd"
 application.config['MYSQL_DB'] = DATABASE
 
 mysql = MySQL(application)
@@ -73,13 +72,11 @@ def index():
 
 
 @application.route('/racing')
-@requires_auth
 def racing():
-    return render_template('racing.html')
+    return requires_auth_view(render_template, VIEW_RACING_USERNAME, VIEW_RACING_PASSWORD)('racing.html')
 
 
 @application.route('/racing-rating/<param>')
-@requires_auth
 def racing_rating(param):
     cursor = mysql.connection.cursor()
     query = f'SELECT DISTINCT(date), location FROM {DATABASE}.racing ORDER BY date'
@@ -87,18 +84,20 @@ def racing_rating(param):
     dates_and_locations = cursor.fetchall()
     cursor.close()
     if param == 'whippets':
-        date_options = [(date[0], date[1], dt.ru_strftime(u"%d %B %Y", inflected=True, date=date[0])) for date in
+        date_options = [(date[0], date[1], date[0]) for date in
                         dates_and_locations]
         year = 2023 if not session.get('RESULTS_DATE') else int(session.get('RESULTS_DATE').split('-')[0])
-        return render_template('racing_rating.html', date_options=date_options, selected_year=year)
+        return requires_auth_view(render_template, VIEW_RACING_USERNAME, VIEW_RACING_PASSWORD)('racing_rating.html',
+                                                                                               date_options=date_options,
+                                                                                               selected_year=year)
 
 
 @application.route('/racing-best/<param>')
-@requires_auth
 def racing_best(param):
     if param == 'whippets':
         year = 2023 if not session.get('RECORDS_DATE') else session.get('RECORDS_DATE')
-        return render_template('racing_best.html', selected_year=year)
+        return requires_auth_view(render_template, VIEW_RACING_USERNAME, VIEW_RACING_PASSWORD)('racing_best.html',
+                                                                                               selected_year=year)
 
 
 @application.route('/rating/<param>')
@@ -335,32 +334,59 @@ def get_results_data():
     if lap_1_sorted:
         query += """ ORDER BY  
                         CASE 
-                            WHEN time_1 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_1 AS FLOAT)
-                            ELSE 99999999 -- Большое число, чтобы значения float оказались в начале
-                          END,
-                          CASE 
-                            WHEN time_1 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
-                            ELSE 1 -- Буквенные значения и пустые строки будут после float значений
-                          END"""
+                            WHEN time_1 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 
+                                CAST(
+                                    CONCAT(
+                                        REPLACE(time_1, '.', ''), 
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_1, '.', '')) = 3 THEN '0'
+                                            ELSE ''
+                                        END,
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_1, '.', '')) = 2 THEN '00'
+                                            ELSE ''
+                                        END
+                                    ) 
+                                AS DECIMAL)
+                            ELSE 99999999
+                        END"""
     elif lap_2_sorted:
         query += """ ORDER BY  
                         CASE 
-                            WHEN time_2 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_2 AS FLOAT)
+                            WHEN time_2 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 
+                                CAST(
+                                    CONCAT(
+                                        REPLACE(time_2, '.', ''), 
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_2, '.', '')) = 3 THEN '0'
+                                            ELSE ''
+                                        END,
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_2, '.', '')) = 2 THEN '00'
+                                            ELSE ''
+                                        END
+                                    ) 
+                                AS DECIMAL)
                             ELSE 99999999
-                        END,
-                        CASE 
-                            WHEN time_2 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
-                            ELSE 1
                         END"""
     elif lap_3_sorted:
         query += """ ORDER BY  
                         CASE 
-                            WHEN time_3 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN CAST(time_3 AS FLOAT)
+                            WHEN time_3 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 
+                                CAST(
+                                    CONCAT(
+                                        REPLACE(time_3, '.', ''), 
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_3, '.', '')) = 3 THEN '0'
+                                            ELSE ''
+                                        END,
+                                        CASE 
+                                            WHEN CHAR_LENGTH(REPLACE(time_3, '.', '')) = 2 THEN '00'
+                                            ELSE ''
+                                        END
+                                    ) 
+                                AS DECIMAL)
                             ELSE 99999999
-                        END,
-                        CASE 
-                            WHEN time_3 REGEXP '^[0-9]+(\.[0-9]+)?$' THEN 0
-                            ELSE 1
                         END"""
     else:
         query += " ORDER BY LEFT(Title, 1) ASC"
