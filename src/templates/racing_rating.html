@@ -73,7 +73,7 @@
             <li class="nav-item">
                 <a class="nav-link" href="/racing">Главная <span class="sr-only">(current)</span></a>
             </li>
-            <li class="nav-item dropdown">
+            <li class="nav-item dropdown active">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button"
                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Результаты</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
@@ -120,11 +120,11 @@
                         </button>
                     {% endif %}
                     <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ year }}">
-                        {% for date, location in date_options %}
+                        {% for date, location, formatted_date in date_options %}
                             {% if date.year == year %}
                                 <li>
                                     <a class="dropdown-item" href="#"
-                                       onclick="sendData('{{ date }}')">{{ date }}, {{ location }}</a>
+                                       onclick="sendData('{{ date }}')">{{ formatted_date }}, {{ location }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}

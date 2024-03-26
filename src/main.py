@@ -2,7 +2,6 @@ import io
 from collections import Counter
 from datetime import datetime
 from functools import wraps
-import locale
 
 import Levenshtein
 import pandas as pd
@@ -11,6 +10,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, R
 from flask_mysqldb import MySQL
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
+from pytils import dt
 
 from src.make_ratings import make_rating
 
@@ -21,7 +21,6 @@ VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD = "view_access", "l3vr3tk1P@ssw0r
 VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD = "view_access", "password_phara0h_h0und"
 SECRET_KEY = ")#lO4\\;nR<0Wy=y^CRM|{#;5f}1{Emu'zt]"
 
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 application = Flask(__name__)
 # application.config['MYSQL_HOST'] = "server25.hosting.reg.ru"
 # application.config['MYSQL_USER'] = "u2255198_artem"
@@ -74,11 +73,13 @@ def index():
 
 
 @application.route('/racing')
+@requires_auth
 def racing():
     return render_template('racing.html')
 
 
 @application.route('/racing-rating/<param>')
+@requires_auth
 def racing_rating(param):
     cursor = mysql.connection.cursor()
     query = f'SELECT DISTINCT(date), location FROM {DATABASE}.racing ORDER BY date'
@@ -86,40 +87,28 @@ def racing_rating(param):
     dates_and_locations = cursor.fetchall()
     cursor.close()
     if param == 'whippets':
-        date_options = [(date[0], date[1]) for date in dates_and_locations]
-        year = 2024 if not session['RESULTS_DATE'] else int(session['RESULTS_DATE'].split('-')[0])
+        date_options = [(date[0], date[1], dt.ru_strftime(u"%d %B %Y", inflected=True, date=date[0])) for date in
+                        dates_and_locations]
+        year = 2023 if not session.get('RESULTS_DATE') else int(session.get('RESULTS_DATE').split('-')[0])
         return render_template('racing_rating.html', date_options=date_options, selected_year=year)
 
 
 @application.route('/racing-best/<param>')
+@requires_auth
 def racing_best(param):
     if param == 'whippets':
-        year = 2024 if not session['RECORDS_DATE'] else session['RECORDS_DATE']
+        year = 2023 if not session.get('RECORDS_DATE') else session.get('RECORDS_DATE')
         return render_template('racing_best.html', selected_year=year)
 
 
 @application.route('/rating/<param>')
 def rating(param):
-    if param == 'whippets':
-        return render_template('rating.html', param=param)
-    elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('rating.html',
-                                                                                                   param=param)
-    elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('rating.html',
-                                                                                                 param=param)
+    return render_template('rating.html', param=param)
 
 
 @application.route('/best/<param>')
 def best(param):
-    if param == 'whippets':
-        return render_template('best.html', param=param)
-    elif param == 'italian_greyhounds':
-        return requires_auth_view(render_template, VIEW_LEVREKTI_USERNAME, VIEW_LEVREKTI_PASSWORD)('best.html',
-                                                                                                   param=param)
-    elif param == 'pharaoh_hound':
-        return requires_auth_view(render_template, VIEW_PHARAOH_USERNAME, VIEW_PHARAOH_PASSWORD)('best.html',
-                                                                                                 param=param)
+    return render_template('best.html', param=param)
 
 
 @application.route('/explanations')
@@ -231,9 +220,13 @@ def get_partial_data():
 @application.route('/get-best-racing-data', methods=['POST'])
 def get_best_racing_data():
     param = request.json['paramValue']
-    year = session['RECORDS_DATE']
+    year = session.get('RECORDS_DATE')
     if not year:
-        year = 2024
+        cur = mysql.connection.cursor()
+        query = f"SELECT MAX(Date) FROM {DATABASE}.racing"
+        cur.execute(query)
+        date = cur.fetchone()[0]
+        year = date.year
 
     if param == 'whippets':
         param = 'Уиппет'
@@ -302,9 +295,12 @@ def get_results_data():
     lap_3_sorted = request.json['lap_3_sorted']
     title_sorted = request.json['title_sorted']
     all_rows = request.json.get('allRows', False)
-    date = str(session.get('RESULTS_DATE')).strip()
+    date = session.get('RESULTS_DATE')
     if not date:
-        date = '2022-05-21'
+        cur = mysql.connection.cursor()
+        query = f"SELECT MAX(Date) FROM {DATABASE}.racing"
+        cur.execute(query)
+        date = cur.fetchone()[0]
 
     if 'whippets' in param:
         param = 'Уиппет'
