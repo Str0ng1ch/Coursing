@@ -134,6 +134,7 @@
         </div>
         <br>
         <p id="competition" class="competition" style="display: none;"></p>
+        <p id="competition_best" class="competition"></p>
     </div>
 
     <table class="table table-bordered" id="results_table">
@@ -281,7 +282,7 @@
                 let tableContent = '';
                 let minTimes = [Infinity, Infinity, Infinity];
                 let minIndices = [0, 0, 0];
-                console.log(data)
+
                 if (data.length === 0) {
                     $("#noResultsMessage").show();
                     $("#showAllButton").hide();
@@ -336,13 +337,19 @@
                 }
                 $("#resultsData").html(tableContent);
 
+                let min_value_data = {}
                 for (let j = 3; j <= 5; j++) {
                     let row_index = minIndices[j - 3] + 1;
                     let table = document.getElementById("results_table");
                     let cell = table.rows[row_index].cells[j];
                     if (table.rows[row_index].cells[j].innerHTML !== '')
                         cell.style.border = "5px solid red";
+                    min_value_data[minTimes[j - 3]] = table.rows[row_index].cells[2].innerText + ' ' +
+                        table.rows[row_index].cells[j].innerText.replace('\n', ' ');
                 }
+
+                let minKey = Math.min(...minTimes);
+                document.getElementById('competition_best').innerHTML = "Лучшее время чемпионата: " + min_value_data[minKey]
             }
         })
     }
@@ -383,7 +390,6 @@
     }
 
     function sortTitleData() {
-        console.log('here')
         let rows = $('#resultsData tr').get();
 
         rows.sort(function (rowA, rowB) {
