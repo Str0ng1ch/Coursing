@@ -1,5 +1,6 @@
-import pandas as pd
 import mysql.connector
+import pandas as pd
+
 
 # Функция для создания подключения к MySQL
 def create_connection():
@@ -10,6 +11,7 @@ def create_connection():
         database="coursing"
     )
     return connection
+
 
 # Функция для создания таблицы в MySQL
 def create_table(connection):
@@ -34,6 +36,7 @@ def create_table(connection):
         )
     """)
     connection.commit()
+
 
 # Функция для вставки данных в MySQL
 def insert_data(connection, data):
@@ -61,6 +64,7 @@ def insert_data(connection, data):
             row['Порода']
         ))
     connection.commit()
+
 
 # Чтение данных из Excel файла
 excel_file = 'results.xlsx'

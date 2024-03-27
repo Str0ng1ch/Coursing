@@ -14,7 +14,6 @@ ws = wb.active
 # Добавляем заголовки столбцов
 ws.append(['Distance', 'Dog Type', 'Sex', 'Nickname', 'Title', 'Lap 1', 'Lap 2', 'Lap 3'])
 
-
 DATABASE, TABLE = "coursing", "results"
 # config = {
 #     'user': "u2255198_artem",
@@ -81,5 +80,6 @@ def make_rating():
 
             ws.append([distance, dog_type, sex, nickname, title, lap_1, lap_2, lap_3])
             wb.save('dog_data.xlsx')
+
 
 make_rating()

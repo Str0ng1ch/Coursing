@@ -10,7 +10,6 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, R
 from flask_mysqldb import MySQL
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
-from pytils import dt
 
 from src.make_ratings import make_rating
 
